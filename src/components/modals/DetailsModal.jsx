@@ -42,7 +42,7 @@ import ChatPanel   from "../chat/ChatPanel";
 // ── Departments list ───────────────────────────────────────────────────────
 const DEPARTMENTS = [
   "Academic","Accounts","Admin","Animation","Broadcasting",
-  "Business Development","Corporate Communications","Documantation",
+  "Business Development","Corporate Communications","Documentation",
   "Govt. Relations","HR","Management","Marketing","Operation",
   "Purchase","Software","Store","System admin","Technical Support",
 ];
