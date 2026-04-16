@@ -30,6 +30,7 @@ export default function FilterBar({
     dept:         "",
     assignedDept: "",
     status:       "",
+    type:         "",
     date:         "",
     search:       "",
   });
@@ -43,7 +44,7 @@ export default function FilterBar({
   }, [onFilterChange]);
 
   const resetFilters = () => {
-    const empty = { name: "", dept: "", assignedDept: "", status: "", date: "", search: "" };
+    const empty = { name: "", dept: "", assignedDept: "", status: "", type: "", date: "", search: "" };
     setFilters(empty);
     onFilterChange(empty);
   };
@@ -103,6 +104,20 @@ export default function FilterBar({
             >
               <option value="">Assigned Department</option>
               {assignedDepts.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2 top-2.5 text-slate-400 pointer-events-none" size={13} />
+          </div>
+
+          {/* Request Type */}
+          <div className="relative min-w-[120px]">
+            <select
+              value={filters.type}
+              onChange={(e) => updateFilter("type", e.target.value)}
+              className="w-full appearance-none bg-white border border-slate-200 py-2 pl-3 pr-7 rounded-lg text-slate-700 text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+            >
+              <option value="">Request Type</option>
+              <option value="sent">Sent</option>
+              <option value="received">Received</option>
             </select>
             <ChevronDown className="absolute right-2 top-2.5 text-slate-400 pointer-events-none" size={13} />
           </div>
@@ -176,7 +191,8 @@ export default function FilterBar({
           {/* User name + role display */}
           <div className="text-right hidden sm:block">
             <p className="text-[12px] font-black text-slate-800 leading-none">{currentUser?.name}</p>
-            <p className="text-[10px] text-slate-500">{currentUser?.role} · {currentUser?.dept}</p>
+            <p className="text-[11px] text-slate-500">{currentUser?.role} · {currentUser?.dept}</p>
+            <p className="text-[11px] text-slate-900">ID : {currentUser?.empId}</p>
           </div>
 
           {/* Avatar button + dropdown wrapper — position:relative contains the dropdown */}
