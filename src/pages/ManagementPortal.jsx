@@ -93,45 +93,49 @@ function ActionPanel({ row, onSubmit, onCancel, loading }) {
   );
 }
 
+// ── HOD status badge ──────────────────────────────────────────────────────────
+function HodBadge({ status }) {
+  if (!status || status === "--")
+    return (
+      <span className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1 justify-center w-fit mx-auto">
+        <Clock size={11} /> Pending
+      </span>
+    );
+  if (status === "Approved")
+    return <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Approved</span>;
+  if (status === "Rejected")
+    return <span className="text-xs font-black text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Rejected</span>;
+  return <span className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">{status}</span>;
+}
+
 // ── Request row ───────────────────────────────────────────────────────────────
 function RequestRow({ row, index, onActionComplete }) {
-  const [expanded,    setExpanded]    = useState(false);
-  const [actioning,   setActioning]   = useState(false);
-  const [submitting,  setSubmitting]  = useState(false);
-  const [done,        setDone]        = useState(null); // { decision }
+  const [expanded,   setExpanded]   = useState(false);
+  const [actioning,  setActioning]  = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const isPending = !row.hodStatus || row.hodStatus === "--" || row.hodStatus === "Checking";
 
   const handleSubmit = async (id, decision, comment) => {
     setSubmitting(true);
     try {
       await submitHodApproval(id, decision, comment);
-      setDone({ decision });
       setActioning(false);
-      // Notify parent to refresh count + remove row after a short delay
-      setTimeout(() => onActionComplete(), 1200);
+      onActionComplete();
     } catch {
       setSubmitting(false);
     }
   };
 
-  if (done) {
-    return (
-      <tr className={done.decision === "Approved" ? "bg-emerald-50" : "bg-red-50"}>
-        <td colSpan={7} className="px-4 py-3 text-center">
-          <span className={`text-xs font-black flex items-center justify-center gap-2 ${
-            done.decision === "Approved" ? "text-emerald-700" : "text-red-700"
-          }`}>
-            {done.decision === "Approved"
-              ? <><CheckCircle2 size={15} /> HOD Approved — updating…</>
-              : <><XCircle size={15} /> HOD Rejected — updating…</>}
-          </span>
-        </td>
-      </tr>
-    );
-  }
+  const rowBg = row.hodStatus === "Approved"
+    ? "bg-emerald-50/40"
+    : row.hodStatus === "Rejected"
+    ? "bg-red-50/40"
+    : "";
 
   return (
     <>
-      <tr className="border-b border-slate-100 hover:bg-amber-50/30 transition-colors">
+      <tr className={`border-b border-slate-100 hover:bg-amber-50/30 transition-colors ${rowBg}`}>
         {/* Sl */}
         <td className="px-3 py-3 text-center text-xs text-slate-500 font-bold">{index + 1}</td>
         {/* Date */}
@@ -168,26 +172,28 @@ function RequestRow({ row, index, onActionComplete }) {
         </td>
         {/* HOD Status */}
         <td className="px-3 py-3 text-center">
-          <span className="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1 justify-center w-fit mx-auto">
-            <Clock size={11} /> Pending
-          </span>
+          <HodBadge status={row.hodStatus} />
         </td>
         {/* Actions */}
         <td className="px-3 py-3 text-center">
-          {actioning ? (
-            <button
-              onClick={() => setActioning(false)}
-              className="text-[10px] text-slate-500 hover:text-slate-700 font-bold underline"
-            >
-              Cancel
-            </button>
+          {isPending ? (
+            actioning ? (
+              <button
+                onClick={() => setActioning(false)}
+                className="text-[10px] text-slate-500 hover:text-slate-700 font-bold underline"
+              >
+                Cancel
+              </button>
+            ) : (
+              <button
+                onClick={() => setActioning(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-[11px] font-black rounded-lg transition-all active:scale-95 mx-auto whitespace-nowrap"
+              >
+                <ShieldCheck size={13} /> Take Action
+              </button>
+            )
           ) : (
-            <button
-              onClick={() => setActioning(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 text-[11px] font-black rounded-lg transition-all active:scale-95 mx-auto whitespace-nowrap"
-            >
-              <ShieldCheck size={13} /> Take Action
-            </button>
+            <span className="text-[10px] text-slate-400 font-medium">—</span>
           )}
         </td>
       </tr>
@@ -251,7 +257,7 @@ export default function ManagementPortal({ currentUser, onLogout }) {
     load(true);
   }, [load]);
 
-  const pendingCount = requests.length;
+  const pendingCount = requests.filter(r => !r.hodStatus || r.hodStatus === "--" || r.hodStatus === "Checking").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 font-sans">
@@ -327,11 +333,16 @@ export default function ManagementPortal({ currentUser, onLogout }) {
 
         {/* ── Toolbar ────────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-black text-slate-700 uppercase tracking-wide">
-            Requests Awaiting HOD Approval
+          <h2 className="text-sm font-black text-slate-700 uppercase tracking-wide flex items-center gap-2 flex-wrap">
+            HOD Approval Requests
             {pendingCount > 0 && (
-              <span className="ml-2 bg-amber-100 text-amber-700 text-[11px] font-black px-2 py-0.5 rounded-full">
-                {pendingCount}
+              <span className="bg-amber-100 text-amber-700 text-[11px] font-black px-2 py-0.5 rounded-full">
+                {pendingCount} Pending
+              </span>
+            )}
+            {requests.length > 0 && (
+              <span className="bg-slate-100 text-slate-500 text-[11px] font-black px-2 py-0.5 rounded-full">
+                {requests.length} Total
               </span>
             )}
           </h2>
@@ -367,8 +378,8 @@ export default function ManagementPortal({ currentUser, onLogout }) {
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
               <CheckCircle2 size={32} className="text-emerald-500" />
             </div>
-            <p className="text-base font-black text-slate-700">All clear!</p>
-            <p className="text-sm text-slate-400">No requests are currently pending HOD approval.</p>
+            <p className="text-base font-black text-slate-700">No HOD requests found.</p>
+            <p className="text-sm text-slate-400">Requests from HOD-role users will appear here.</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
