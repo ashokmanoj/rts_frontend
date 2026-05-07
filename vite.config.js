@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import path from 'path'
 
-// Load LAN cert if it exists — enables HTTPS on LAN (required for Web Push)
 function loadCerts() {
   const certDir = path.resolve(__dirname, 'certs');
   const cert = path.join(certDir, '192.168.1.128+2.pem');
@@ -11,13 +10,28 @@ function loadCerts() {
   if (fs.existsSync(cert) && fs.existsSync(key)) {
     return { cert: fs.readFileSync(cert), key: fs.readFileSync(key) };
   }
-  return undefined; // fall back to plain HTTP if certs not present
+  return undefined;
+}
+
+// ✅ Auto-copy web.config to dist after build
+function copyWebConfig() {
+  return {
+    name: 'copy-web-config',
+    closeBundle() {
+      const src = path.resolve(__dirname, 'web.config');
+      const dest = path.resolve(__dirname, 'dist', 'web.config');
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dest);
+        console.log('✅ web.config copied to dist/');
+      }
+    }
+  }
 }
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyWebConfig()],
   server: {
-    host:  true, // listen on 0.0.0.0 so LAN devices can reach it
+    host: true,
     https: loadCerts(),
     proxy: {
       '/api':     { target: 'http://localhost:5001', changeOrigin: true },
