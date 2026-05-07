@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, ZoomIn, Download, Bell, Send, ShieldCheck } from "lucide-react";
+import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, ZoomIn, Download, Bell, Send, ShieldCheck, Calendar, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useEscapeKey } from "../../hooks/useEscapeKey";
 import { getNowTime, getNowDate, getNowDateTime } from "../../utils/dateTime";
 import { sanitizeUrl } from "../../utils/security";
@@ -73,18 +73,23 @@ function ApprovalProgress({ rmStatus, hodStatus, deptHodStatus, isClosed }) {
   );
 }
 
-export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSendMessage, onApproval, onOpenCloseTicket }) {
-  const [selectedDept,    setSelectedDept]    = useState(req?.assignedDept || "");
-  const [approvalComment, setApprovalComment] = useState("");
-  const [lightboxSrc,     setLightboxSrc]     = useState(null);
+export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSendMessage, onApproval, onOpenCloseTicket, onAcknowledge }) {
+  const [selectedDept,      setSelectedDept]      = useState(req?.assignedDept || "");
+  const [approvalComment,   setApprovalComment]   = useState("");
+  const [lightboxSrc,       setLightboxSrc]       = useState(null);
+  const [showCheckingModal, setShowCheckingModal] = useState(false);
+  const [checkingDate,      setCheckingDate]      = useState("");
+  const [checkingReason,    setCheckingReason]    = useState("");
+  const [ackLoading,        setAckLoading]        = useState(false);
 
   useEscapeKey(lightboxSrc ? () => setLightboxSrc(null) : onClose);
 
-  const logs      = chatLogs[req?.id] || [];
+  const logs        = chatLogs[req?.id] || [];
   const deptChanged = selectedDept !== req?.assignedDept;
-  const isClosed  = req?.isClosed || false;
-  const role      = currentUser?.role || "";
-  const roleLow   = role.toLowerCase();
+  const isClosed    = req?.isClosed || false;
+  const isPendingAck = req?.assignedStatus === "Pending Acknowledgement";
+  const role        = currentUser?.role || "";
+  const roleLow     = role.toLowerCase();
 
   const isRM         = roleLow === "rm";
   const isHOD        = roleLow === "hod";
@@ -96,10 +101,9 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   const isAssignedToMyDept = req?.assignedDept === currentUser?.dept;
   const isTeamMemberIncoming = isFromOtherDept && isAssignedToMyDept;
 
-  const canApprove    = (isRM || isHOD || isDeptHOD || isManagement) && !isClosed && !isOwnRequest;
-  const canChangeDept = (isRM || isHOD || isDeptHOD || isManagement) && !isOwnRequest && !isClosed;
-  // Users can close tickets of OTHER departments assigned to THEIR department
-  const canClose      = ((isDeptHOD || isManagement) && !isOwnRequest && !isClosed) || (isTeamMemberIncoming && !isClosed && !isAdmin);
+  const canApprove    = (isRM || isHOD || isDeptHOD || isManagement) && !isClosed && !isPendingAck && !isOwnRequest;
+  const canChangeDept = (isRM || isHOD || isDeptHOD || isManagement) && !isOwnRequest && !isClosed && !isPendingAck;
+  const canClose      = ((isDeptHOD || isManagement) && !isOwnRequest && !isClosed && !isPendingAck) || (isTeamMemberIncoming && !isClosed && !isPendingAck && !isAdmin);
   const canChat       = !isAdmin && !isClosed;
   const isRequestorMode = roleLow === "requestor" || isOwnRequest;
 
@@ -108,12 +112,12 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
 
   const isImageUrl = (url) => url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
 
-  const handleApproval = (decision) => {
+  const handleApproval = (decision, checkingDeadline = null, checkingReasonVal = null) => {
     const dateTime = getNowDateTime();
-    onApproval(req.id, decision, dateTime, currentUser, approvalComment, selectedDept);
+    onApproval(req.id, decision, dateTime, currentUser, approvalComment, selectedDept, checkingDeadline, checkingReasonVal);
     onSendMessage(req.id, {
       id: Date.now(), author: currentUser.name, role: currentUser.role,
-      text: approvalComment || `${decision} the request.`,
+      text: approvalComment || `${decision} the request.${checkingReasonVal ? ` Reason: ${checkingReasonVal}` : ""}`,
       time: getNowTime(), date: getNowDate(),
       type: "approval", status: decision, purpose: req.purpose,
       changedDept: decision === "Forwarded" ? selectedDept : null,
@@ -121,6 +125,22 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
     });
     setApprovalComment("");
   };
+
+  const handleCheckingConfirm = () => {
+    handleApproval("Checking", checkingDate || null, checkingReason || null);
+    setShowCheckingModal(false);
+    setCheckingDate("");
+    setCheckingReason("");
+  };
+
+  const handleAcknowledge = async (status) => {
+    if (!onAcknowledge) return;
+    setAckLoading(true);
+    try { await onAcknowledge(req.id, status); }
+    finally { setAckLoading(false); }
+  };
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const actionLabel = isManagement ? "Management Action" : isRM?"RM Action":isHOD?"HOD Action":isDeptHOD?"Dept HOD Action":"";
 
@@ -135,6 +155,76 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   return (
     <>
       {lightboxSrc && <ImageLightbox src={lightboxSrc} fileName={req?.fileName} onClose={() => setLightboxSrc(null)} />}
+
+      {/* Checking deadline popup */}
+      {showCheckingModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <Clock size={16} className="text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800">Set Checking Deadline</h3>
+                  <p className="text-[10px] text-slate-400 font-medium">How long do you need?</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCheckingModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+                <X size={16}/>
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                <Calendar size={10}/> Completion Date
+              </label>
+              <input
+                type="date"
+                min={todayStr}
+                value={checkingDate}
+                onChange={e => setCheckingDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-[13px] font-medium outline-none focus:ring-2 focus:ring-amber-400 transition-all cursor-pointer"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reason / Plan</label>
+              <textarea
+                rows={3}
+                placeholder="e.g. Waiting for vendor quote, will complete by selected date..."
+                value={checkingReason}
+                onChange={e => setCheckingReason(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-[12px] font-medium outline-none focus:ring-2 focus:ring-amber-400 resize-none transition-all"
+              />
+            </div>
+
+            {checkingDate && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-[11px]">
+                <AlertTriangle size={13} className="text-amber-500 flex-shrink-0"/>
+                <span className="text-amber-700 font-medium">
+                  Countdown starts now. Team will see days remaining.
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setShowCheckingModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[12px] transition-all active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCheckingConfirm}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[12px] transition-all active:scale-95"
+              >
+                Confirm Checking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
         <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl w-full sm:max-w-4xl border border-slate-200 flex flex-col" style={{maxHeight:"95dvh"}}>
 
@@ -147,6 +237,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               <h2 className="text-sm sm:text-lg font-black uppercase tracking-tighter text-slate-800 truncate max-w-[55vw] sm:max-w-none">#{req?.id} — {req?.purpose}</h2>
               {req?.forwarded && <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black"><Forward size={10}/> Forwarded</span>}
               {isClosed && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-black">🔒 Closed</span>}
+              {isPendingAck && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">⏳ Pending Acknowledgement</span>}
               {isOwnRequest && !isRequestorMode && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">Your Request</span>}
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${roleBadgeCls}`}>{currentUser?.dept}department</span>
             </div>
@@ -192,6 +283,32 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15}/>
                 </div>
               </div>
+
+              {req?.assignedDepts && req.assignedDepts.split(",").length > 1 && (
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 ml-0.5">All Assigned Departments</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {req.assignedDepts.split(",").map((d) => (
+                      <span key={d} className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${d.trim() === req.assignedDept ? "bg-indigo-100 text-indigo-700 border-indigo-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}>
+                        {d.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {req?.assignedPersonName && (
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 ml-0.5">Assigned Person(s)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {req.assignedPersonName.split(",").map((name) => (
+                      <span key={name} className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-bold">
+                        <User size={10}/> {name.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 ml-0.5">Request Description</p>
@@ -241,16 +358,106 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                         ) : (
                           <button onClick={() => handleApproval("Approved")} className="bg-emerald-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-emerald-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5"><CheckCircle size={13}/> Approve</button>
                         )}
-                        <button onClick={() => handleApproval("Checking")} className="bg-amber-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-amber-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5"><Clock size={13}/> Checking</button>
+                        <button onClick={() => setShowCheckingModal(true)} className="bg-amber-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-amber-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5"><Clock size={13}/> Checking</button>
                         <button onClick={() => handleApproval("Rejected")} className="bg-red-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-red-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5"><XCircle size={13}/> Reject</button>
                       </div>
                     </>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
-                       <button onClick={() => handleApproval("Checking")} className="bg-amber-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-amber-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5"><Clock size={13}/> Checking</button>
+                       <button onClick={() => setShowCheckingModal(true)} className="bg-amber-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-amber-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5"><Clock size={13}/> Checking</button>
                        <button onClick={() => onOpenCloseTicket(req)} className="bg-red-500 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-red-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5">🔒 Close Ticket</button>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Due date / priority info */}
+              {req?.dueDate && (
+                <div className={`rounded-xl p-3 border flex items-center gap-3 ${
+                  req.priority === "High" || req.priority === "Overdue"
+                    ? "bg-red-50 border-red-200"
+                    : req.priority === "Medium"
+                    ? "bg-amber-50 border-amber-200"
+                    : "bg-green-50 border-green-200"
+                }`}>
+                  <Calendar size={16} className={req.priority === "High" || req.priority === "Overdue" ? "text-red-500" : req.priority === "Medium" ? "text-amber-500" : "text-green-600"} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Due Date</p>
+                    <p className="text-[12px] font-bold text-slate-800">{req.dueDate}</p>
+                  </div>
+                  {req.priority && (
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      req.priority === "Overdue" ? "bg-red-600 text-white" :
+                      req.priority === "High"    ? "bg-red-100 text-red-700" :
+                      req.priority === "Medium"  ? "bg-amber-100 text-amber-700" :
+                                                   "bg-green-100 text-green-700"}`}>
+                      {req.priority === "Overdue" ? "⚠ Overdue" : `${req.priority} Urgency`}
+                    </span>
+                  )}
+                  {req.daysUntilDue != null && req.daysUntilDue >= 0 && (
+                    <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">{req.daysUntilDue}d left</span>
+                  )}
+                </div>
+              )}
+
+              {/* Checking deadline info */}
+              {req?.checkingDeadline && !isClosed && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
+                  <Clock size={16} className="text-amber-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-amber-600">Checking Deadline</p>
+                    <p className="text-[12px] font-bold text-slate-800">{req.checkingDeadline}</p>
+                    {req.checkingReason && <p className="text-[11px] text-slate-500 mt-0.5">{req.checkingReason}</p>}
+                  </div>
+                  {req.checkingDaysLeft != null && (
+                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-full whitespace-nowrap ${req.checkingDaysLeft < 0 ? "bg-red-100 text-red-700" : req.checkingDaysLeft <= 2 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                      {req.checkingDaysLeft < 0 ? "Overdue!" : `${req.checkingDaysLeft}d left`}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Acknowledgement — shown when pending (requestor action) or already done */}
+              {(isPendingAck || (isClosed && req?.acknowledgement)) && req?.isOwnRequest && (
+                <div className={`border rounded-2xl p-4 space-y-2 ${isPendingAck ? "border-amber-200 bg-amber-50/40" : "border-slate-200"}`}>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                    <ThumbsUp size={12} /> Acknowledgement
+                  </p>
+                  {req.acknowledgement ? (
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-black ${req.acknowledgement === "Received" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                      {req.acknowledgement === "Received" ? <ThumbsUp size={14}/> : <ThumbsDown size={14}/>}
+                      {req.acknowledgement}
+                      {req.acknowledgedAt && <span className="ml-auto text-[10px] font-medium opacity-70">{req.acknowledgedAt}</span>}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[11px] text-amber-700 font-bold">The team has resolved your request. Did you receive what was requested?</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAcknowledge("Received")}
+                          disabled={ackLoading}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-[11px] transition-all active:scale-95 disabled:opacity-60"
+                        >
+                          <ThumbsUp size={13}/> Received
+                        </button>
+                        <button
+                          onClick={() => handleAcknowledge("Not Received")}
+                          disabled={ackLoading}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black text-[11px] transition-all active:scale-95 disabled:opacity-60"
+                        >
+                          <ThumbsDown size={13}/> Not Received
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Pending ack notice for non-requestors */}
+              {isPendingAck && !req?.isOwnRequest && (
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                  <AlertTriangle size={14} className="text-amber-500 flex-shrink-0"/>
+                  <p className="text-[11px] text-amber-700 font-bold">Waiting for requestor to confirm receipt. Ticket will close upon confirmation.</p>
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { fetchRequests, fetchFilterOptions, createRequest, submitApproval, markRequestSeen, markRequestUnread, closeRequest } from "../services/requestService";
+import { fetchRequests, fetchFilterOptions, createRequest, submitApproval, acknowledgeRequest, markRequestSeen, markRequestUnread, closeRequest } from "../services/requestService";
 import { fetchChat, sendText, sendFile, sendVoice } from "../services/chatService";
 import { getStoredUser } from "../services/authService";
 import FilterBar         from "../components/layout/FilterBar";
@@ -167,13 +167,21 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
     } catch (err) {}
   };
 
-  const handleApproval = async (reqId, decision, dateTime, user, comment, newDept) => {
+  const handleApproval = async (reqId, decision, dateTime, user, comment, newDept, checkingDeadline, checkingReason) => {
     try {
-      const updated = await submitApproval(reqId, decision, comment, newDept);
+      const updated = await submitApproval(reqId, decision, comment, newDept, checkingDeadline, checkingReason);
       setRequests((prev) => prev.map((r) => (r.id === reqId ? { ...updated, seen: true } : r)));
       if (selectedReq?.id === reqId) setSelectedReq({ ...updated, seen: true });
       const result = await fetchChat(reqId);
       setChatLogs((prev) => ({ ...prev, [reqId]: result?.data ?? result }));
+    } catch (err) {}
+  };
+
+  const handleAcknowledge = async (reqId, status) => {
+    try {
+      const updated = await acknowledgeRequest(reqId, status);
+      setRequests((prev) => prev.map((r) => (r.id === reqId ? { ...updated, seen: true } : r)));
+      if (selectedReq?.id === reqId) setSelectedReq({ ...updated, seen: true });
     } catch (err) {}
   };
 
@@ -242,12 +250,12 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
       {/* ── Tab Navigation ─────────────────────────────────────────────────── */}
       {(() => {
         const loc              = currentUser?.location?.toLowerCase() || '';
-        const isBengaluru      = loc.includes('ngal');
+        const isBengaluru      = loc.includes('bangalore') || loc.includes('bengaluru') || loc.includes('ngal');
         const isInternRole     = currentUser?.role === 'Intern';
-        const isFoodRole       = ['HR', 'FoodCommittee'].includes(currentUser?.role);
+        const isRequestorRole  = currentUser?.role === 'Requestor';
         const isFoodReportHOD  = currentUser?.role === 'DeptHOD' &&
                                   ['HR', 'Food Committee'].includes(currentUser?.dept);
-        const showFoodTab      = isBengaluru || isInternRole || isFoodRole || isFoodReportHOD;
+        const showFoodTab      = (isRequestorRole || isInternRole) && isBengaluru;
         const isHRDeptHOD      = currentUser?.role === 'DeptHOD' && currentUser?.dept === 'HR';
         const showMgmtTab      = isHRDeptHOD;
 
@@ -313,6 +321,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
           currentUser={currentUser}
           onOpenDetails={handleOpenDetails}
           onMarkUnread={(id) => markRequestUnread(id).then(() => loadRequests(currentPage, filters, true))}
+          onAcknowledge={handleAcknowledge}
         />
       </div>
 
@@ -337,6 +346,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
           req={selectedReq} chatLogs={chatLogs} currentUser={currentUser}
           onClose={() => { setActiveModal(null); setSelectedReq(null); }}
           onSendMessage={handleSendMessage} onApproval={handleApproval}
+          onAcknowledge={handleAcknowledge}
           onOpenCloseTicket={(req) => setCloseTicketReq(req)}
         />
       )}

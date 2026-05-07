@@ -13,17 +13,25 @@ export async function fetchFilterOptions() {
   return get("/requests/filters");
 }
 
-export async function createRequest({ purpose, assignedDept, description, file }) {
+export async function createRequest({ purpose, assignedDept, assignedDepts, description, file, dueDate, assignedPersonEmpId, assignedPersonName }) {
   const fd = new FormData();
   fd.append("purpose", purpose);
-  if (assignedDept) fd.append("assignedDept", assignedDept);
+  if (assignedDept)  fd.append("assignedDept",  assignedDept);
+  if (assignedDepts) fd.append("assignedDepts", assignedDepts);
   fd.append("description", description || "");
   if (file) fd.append("file", file);
+  if (dueDate) fd.append("dueDate", dueDate);
+  if (assignedPersonEmpId) fd.append("assignedPersonEmpId", assignedPersonEmpId);
+  if (assignedPersonName)  fd.append("assignedPersonName",  assignedPersonName);
   return postForm("/requests", fd);
 }
 
-export async function submitApproval(id, decision, comment = "", newDept = "") {
-  return patch(`/requests/${id}/approval`, { decision, comment, newDept });
+export async function submitApproval(id, decision, comment = "", newDept = "", checkingDeadline = null, checkingReason = null) {
+  return patch(`/requests/${id}/approval`, { decision, comment, newDept, checkingDeadline, checkingReason });
+}
+
+export async function acknowledgeRequest(id, status) {
+  return patch(`/requests/${id}/acknowledge`, { status });
 }
 export async function markRequestSeen(id)   { return patch(`/requests/${id}/seen`, {}); }
 export async function markRequestUnread(id) { return patch(`/requests/${id}/unread`, {}); }

@@ -27,7 +27,7 @@ export default function FoodOptInModal({ onConfirm, onDecline, loading }) {
             </div>
             <div className="flex justify-between text-[12px]">
               <span className="text-slate-600 font-medium">Working days</span>
-              <span className="font-black text-slate-700">Mon – Fri (excl. holidays)</span>
+              <span className="font-black text-slate-700">Mon – Saturday (excl. holidays and 2nd and 4th Saturdays)</span>
             </div>
             <div className="flex justify-between text-[12px]">
               <span className="text-slate-600 font-medium">Subscription starts</span>
@@ -35,7 +35,7 @@ export default function FoodOptInModal({ onConfirm, onDecline, loading }) {
             </div>
             <div className="flex justify-between text-[12px]">
               <span className="text-slate-600 font-medium">Cancellation window</span>
-              <span className="font-black text-slate-700">Before Sunday 10:30 AM</span>
+              <span className="font-black text-slate-700">Before Saturday 6:30 PM</span>
             </div>
             <div className="flex justify-between text-[12px]">
               <span className="text-slate-600 font-medium">Valid until</span>
@@ -44,7 +44,7 @@ export default function FoodOptInModal({ onConfirm, onDecline, loading }) {
           </div>
 
           <p className="text-slate-400 text-[11px] text-center">
-            Opting in mid-week? Your meals begin from next Monday. Changes can be made or undone before Sunday 10:30 AM each week.
+            Opting in mid-week? Your meals begin from next Monday. Changes can be made or undone before Saturday 6:30 PM each week.
           </p>
         </div>
 

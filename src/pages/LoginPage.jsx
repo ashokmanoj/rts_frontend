@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link }     from "react-router-dom";
 import { login, selectRole } from "../services/authService";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 import InstructionsModal from "../components/modals/InstructionsModal";
 
 const ROLE_LABELS = {
@@ -22,9 +22,10 @@ export default function LoginPage({ onLogin }) {
   const [loading,  setLoading]  = useState(false);
 
   // Role selection state (multi-role users only)
-  const [pending,   setPending]   = useState(null); // { tempToken, availableRoles }
-  const [selecting, setSelecting] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [pending,      setPending]      = useState(null);
+  const [selecting,    setSelecting]    = useState(false);
+  const [showGuide,    setShowGuide]    = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,9 +84,9 @@ export default function LoginPage({ onLogin }) {
       <div className="w-full max-w-md">
         <div className="bg-white shadow-2xl rounded-3xl border border-slate-200 overflow-hidden">
           <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 p-6 sm:p-8 text-center">
-            <h1 className="text-3xl font-black text-white tracking-tight">RTS SYSTEM</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">TELE-RTS</h1>
             <p className="text-indigo-200 text-sm mt-1 font-medium">
-              {pending ? "Select your active role" : "Tele Education Portal"}
+              {pending ? "Select your active role" : "Tele Education Portal ( Internal Use Only )"}
             </p>
           </div>
 
@@ -108,7 +109,7 @@ export default function LoginPage({ onLogin }) {
                     <span className="text-sm font-bold text-indigo-700">
                       {ROLE_LABELS[role] || role}
                     </span>
-                    <span className="text-xs text-slate-500">{dept}</span>
+                    <span className="text-xs text-slate-500">{dept} Department</span>
                   </button>
                 ))}
                 {error && (
@@ -129,11 +130,22 @@ export default function LoginPage({ onLogin }) {
                   onChange={(e) => setEmail(e.target.value)} required
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                 />
-                <input
-                  type="password" placeholder="Password" value={password}
-                  onChange={(e) => setPassword(e.target.value)} required
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password" value={password}
+                    onChange={(e) => setPassword(e.target.value)} required
+                    className="w-full p-4 pr-12 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {error && (
                   <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-3 rounded-xl">{error}</p>
                 )}
