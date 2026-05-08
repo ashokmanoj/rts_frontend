@@ -58,8 +58,11 @@ export default function RequestTable({ requests, currentUser, onOpenDetails, onM
                 Requestor Department
               </th>
               <th className="sticky top-0 bg-[#f1f5f9] border-b w-8 z-20" />
-              <th colSpan="7" className="sticky top-0 bg-orange-300 border border-black p-3 text-center z-20">
+              <th colSpan="5" className="sticky top-0 bg-orange-300 border border-black p-3 text-center z-20">
                 Assigned Department
+              </th>
+              <th className="sticky top-0 bg-[#9acafa] border-b w-8 border border-black p-3 text-center z-20" >
+              Requestor
               </th>
             </tr>
             <tr className="bg-slate-100 border-l border-black text-slate-700 font-bold">
@@ -69,12 +72,18 @@ export default function RequestTable({ requests, currentUser, onOpenDetails, onM
                 </th>
               ))}
               <th className="sticky top-[45px] bg-[#f1f5f9] w-8 z-10" />
-              {["Details", "Department", "Checking Info", "Dept HOD Status", "Request Status", "Ack. Status"].map((h) => (
+              {["Details", "Department", "Checking Info", "Dept HOD Status", "Request Status"].map((h) => (
                 <th key={h} className="sticky top-[45px] bg-slate-100 border border-black p-1 z-10 text-center whitespace-nowrap text-[11px]">
                   {h}
                 </th>
               ))}
+              <th className="sticky top-[45px] bg-[#f1f5f9] w-8 z-10 p-2" >
+               Acknowledgement
+              </th>
+              
             </tr>
+            
+            
           </thead>
 
           <tbody className="bg-white">

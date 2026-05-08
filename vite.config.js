@@ -13,7 +13,6 @@ function loadCerts() {
   return undefined;
 }
 
-// ✅ Auto-copy web.config to dist after build
 function copyWebConfig() {
   return {
     name: 'copy-web-config',
@@ -29,13 +28,14 @@ function copyWebConfig() {
 }
 
 export default defineConfig({
+  base: '/telerts/',  // ← added for IIS subfolder
   plugins: [react(), copyWebConfig()],
   server: {
     host: true,
     https: loadCerts(),
     proxy: {
-      '/api':     { target: 'http://localhost:5001', changeOrigin: true },
-      '/uploads': { target: 'http://localhost:5001', changeOrigin: true },
+      '/api':     { target: 'http://localhost:5000', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:5000', changeOrigin: true },
     },
   },
 })
