@@ -28,7 +28,7 @@ function copyWebConfig() {
 }
 
 export default defineConfig({
-  base: '/telerts/',  // ← added for IIS subfolder
+  base: '/',  // ← added for IIS subfolder
   plugins: [react(), copyWebConfig()],
   server: {
     host: true,
