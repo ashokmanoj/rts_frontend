@@ -154,7 +154,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
 
   return (
     <>
-      {lightboxSrc && <ImageLightbox src={lightboxSrc} fileName={req?.fileName} onClose={() => setLightboxSrc(null)} />}
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} fileName={req?.fileNames?.[req?.fileUrls?.indexOf(lightboxSrc)] ?? req?.fileName} onClose={() => setLightboxSrc(null)} />}
 
       {/* Checking deadline popup */}
       {showCheckingModal && (
@@ -316,18 +316,25 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               </div>
 
               <div>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 ml-0.5">Attached File</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 ml-0.5">
+                  Attached Files {req?.fileUrls?.length > 1 && <span className="text-indigo-400 normal-case">({req.fileUrls.length})</span>}
+                </p>
                 <div className="border-2 border-dashed border-blue-100 p-3 flex justify-center items-center rounded-xl bg-blue-50/30 min-h-[90px]">
-                  {req?.fileUrl ? (
-                    isImageUrl(req.fileUrl) ? (
-                      <div className="relative group cursor-pointer" onClick={() => setLightboxSrc(req.fileUrl)}>
-                        <img src={sanitizeUrl(req.fileUrl)} alt={req.fileName||"attachment"} className="rounded-lg shadow-md border-4 border-white max-h-48 object-contain group-hover:brightness-90 transition-all"/>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><div className="bg-black/50 rounded-full p-2"><ZoomIn size={20} className="text-white"/></div></div>
-                        <p className="text-[10px] text-slate-400 text-center mt-1 font-medium">Click to view full size</p>
-                      </div>
-                    ) : (
-                      <a href={sanitizeUrl(req.fileUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-bold text-[12px] underline">📎 {req.fileName||"View attachment"}</a>
-                    )
+                  {req?.fileUrls?.length > 0 ? (
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      {req.fileUrls.map((url, idx) => (
+                        isImageUrl(url) ? (
+                          <div key={idx} className="relative group cursor-pointer" onClick={() => setLightboxSrc(url)}>
+                            <img src={sanitizeUrl(url)} alt={req.fileNames?.[idx] || "attachment"} className="h-24 w-24 object-cover rounded-xl shadow-md border-2 border-white group-hover:brightness-90 transition-all"/>
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"><div className="bg-black/50 rounded-full p-1"><ZoomIn size={16} className="text-white"/></div></div>
+                          </div>
+                        ) : (
+                          <a key={idx} href={sanitizeUrl(url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-bold text-[12px] underline">
+                            📎 {req.fileNames?.[idx] || "View attachment"}
+                          </a>
+                        )
+                      ))}
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-slate-300"><ImageOff size={28}/><span className="text-[10px] font-bold text-slate-400">No attachment</span></div>
                   )}

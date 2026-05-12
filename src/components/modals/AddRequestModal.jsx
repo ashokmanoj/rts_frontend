@@ -205,8 +205,8 @@ function CalendarPicker({ value, onChange, minDateStr }) {
 export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
   const [purpose,      setPurpose]      = useState("");
   const [description,  setDescription]  = useState("");
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [selectedDept, setSelectedDept] = useState("");
   const [dueDate,      setDueDate]      = useState("");
 
@@ -215,13 +215,25 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
   useEscapeKey(onClose);
 
   const handleFileChange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setUploadedFile(f);
-    setImagePreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
+    const newFiles = Array.from(e.target.files);
+    if (!newFiles.length) return;
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setImagePreviews(prev => [...prev, ...newFiles.map(f => f.type.startsWith("image/") ? URL.createObjectURL(f) : null)]);
+    e.target.value = "";
   };
 
-  const handleRemove = () => { setUploadedFile(null); setImagePreview(null); };
+  const handleRemoveFile = (idx) => {
+    const preview = imagePreviews[idx];
+    if (preview) URL.revokeObjectURL(preview);
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+    setUploadedFiles(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleRemoveAll = () => {
+    imagePreviews.forEach(p => p && URL.revokeObjectURL(p));
+    setUploadedFiles([]);
+    setImagePreviews([]);
+  };
 
   const handleSubmit = () => {
     if (!purpose.trim()) return;
@@ -230,7 +242,7 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
       assignedDept:  selectedDept || "",
       assignedDepts: selectedDept || "",
       description,
-      file: uploadedFile,
+      files: uploadedFiles.length > 0 ? uploadedFiles : null,
       dueDate: dueDate || null,
       assignedPersonEmpId: null,
       assignedPersonName:  null,
@@ -238,7 +250,6 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
     onClose();
   };
 
-  const fileInfo     = uploadedFile ? getFileInfo(uploadedFile) : null;
   const urgencyInfo  = priorityFromDueDate(dueDate);
 
   const today = new Date().toISOString().split("T")[0];
@@ -315,45 +326,54 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
           />
 
           {/* Upload zone */}
-          <div className="relative border-4 border-dashed border-slate-100 min-h-[150px] flex flex-col items-center justify-center rounded-3xl bg-slate-50 hover:bg-blue-50/40 transition-colors group overflow-hidden">
-            {!uploadedFile && (
+          <div className="relative border-4 border-dashed border-slate-100 min-h-[150px] flex flex-col items-center justify-center rounded-3xl bg-slate-50 hover:bg-blue-50/40 transition-colors group overflow-hidden p-4">
+            {uploadedFiles.length === 0 ? (
               <>
                 <Upload className="text-slate-300 mb-2 group-hover:text-blue-400 transition-colors" size={30} />
-                <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Upload any file (optional)</span>
+                <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Upload images or files (optional)</span>
                 <button
-                  onClick={() => document.getElementById("addReqFileInput").click()}
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
                   className="mt-3 bg-indigo-900 text-white px-5 py-1.5 rounded-xl text-xs font-black shadow-lg active:scale-95 transition-transform"
                 >
-                  Select file
+                  Select files
                 </button>
               </>
-            )}
-            {uploadedFile && fileInfo.kind === "image" && imagePreview && (
-              <div className="flex flex-col items-center gap-2 p-4 w-full">
-                <img src={imagePreview} alt="Preview" className="max-h-24 rounded-xl shadow-md object-contain" />
-                <p className="text-[11px] text-slate-500 font-medium truncate max-w-[240px]">{uploadedFile.name}</p>
-                <p className="text-[10px] text-slate-400">{formatSize(uploadedFile.size)}</p>
-              </div>
-            )}
-            {uploadedFile && fileInfo.kind !== "image" && (
-              <div className="flex flex-col items-center gap-2 p-4">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${fileInfo.color}`}>
-                  <FileKindIcon kind={fileInfo.kind} iconColor={fileInfo.iconColor} size={28} />
+            ) : (
+              <div className="w-full space-y-3">
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {uploadedFiles.map((f, idx) => {
+                    const info = getFileInfo(f);
+                    const preview = imagePreviews[idx];
+                    return (
+                      <div key={idx} className="relative group/item flex-shrink-0 flex flex-col items-center">
+                        <div className={`w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center ${info.color} border-2 border-white shadow-sm`}>
+                          {info.kind === "image" && preview
+                            ? <img src={preview} alt={f.name} className="w-full h-full object-cover" />
+                            : <FileKindIcon kind={info.kind} iconColor={info.iconColor} size={28} />
+                          }
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(idx)}
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors z-10"
+                        >
+                          <X size={10} />
+                        </button>
+                        <p className="text-[8px] text-slate-500 font-medium mt-1 truncate w-20 text-center" title={f.name}>{f.name}</p>
+                        <p className="text-[8px] text-slate-400">{formatSize(f.size)}</p>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-center">
-                  <p className="text-[12px] font-black text-slate-700 truncate max-w-[220px]">{uploadedFile.name}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{fileInfo.label} · {formatSize(uploadedFile.size)}</p>
+                <div className="flex items-center justify-center gap-4">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[11px] text-indigo-600 font-bold hover:underline">+ Add more</button>
+                  <span className="text-slate-300 text-xs">|</span>
+                  <button type="button" onClick={handleRemoveAll} className="text-[11px] text-red-500 font-bold hover:underline">Remove all</button>
                 </div>
               </div>
             )}
-            {uploadedFile && (
-              <div className="flex items-center gap-4 mt-1">
-                <button onClick={() => document.getElementById("addReqFileInput").click()} className="text-[11px] text-indigo-600 font-bold hover:underline">Change</button>
-                <span className="text-slate-300 text-xs">|</span>
-                <button onClick={handleRemove} className="text-[11px] text-red-500 font-bold hover:underline">Remove</button>
-              </div>
-            )}
-            <input type="file" id="addReqFileInput" className="hidden" accept="*" onChange={handleFileChange} />
+            <input type="file" ref={fileInputRef} className="hidden" accept="*" multiple onChange={handleFileChange} />
           </div>
 
           {/* Actions */}

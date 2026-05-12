@@ -13,13 +13,13 @@ export async function fetchFilterOptions() {
   return get("/requests/filters");
 }
 
-export async function createRequest({ purpose, assignedDept, assignedDepts, description, file, dueDate, assignedPersonEmpId, assignedPersonName }) {
+export async function createRequest({ purpose, assignedDept, assignedDepts, description, files, dueDate, assignedPersonEmpId, assignedPersonName }) {
   const fd = new FormData();
   fd.append("purpose", purpose);
   if (assignedDept)  fd.append("assignedDept",  assignedDept);
   if (assignedDepts) fd.append("assignedDepts", assignedDepts);
   fd.append("description", description || "");
-  if (file) fd.append("file", file);
+  if (files?.length) files.forEach(f => fd.append("files", f));
   if (dueDate) fd.append("dueDate", dueDate);
   if (assignedPersonEmpId) fd.append("assignedPersonEmpId", assignedPersonEmpId);
   if (assignedPersonName)  fd.append("assignedPersonName",  assignedPersonName);
