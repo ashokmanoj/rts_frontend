@@ -51,7 +51,7 @@ export default function RequestTable({ requests, currentUser, onOpenDetails, onM
       )}
 
       <div className="bg-white rounded-xl shadow-xl border overflow-auto" style={{maxHeight:"calc(100dvh - 280px)", minHeight:"200px"}}>
-        <table className="w-full border-collapse min-w-[860px]">
+        <table className="w-full border-collapse border border-black min-w-[860px]">
           <thead>
             <tr className="text-slate-800 uppercase font-black text-[13px]">
               <th colSpan="11" className="sticky top-0 bg-blue-300 border border-black p-3 text-center z-20">
@@ -77,8 +77,8 @@ export default function RequestTable({ requests, currentUser, onOpenDetails, onM
                   {h}
                 </th>
               ))}
-              <th className="sticky top-[45px] bg-[#f1f5f9] w-8 z-10 p-2" >
-               Acknowledgement
+              <th className="sticky top-[45px] bg-[#f1f5f9] border border-black p-2 z-10 text-center whitespace-nowrap text-[11px]">
+                Acknowledgement
               </th>
               
             </tr>

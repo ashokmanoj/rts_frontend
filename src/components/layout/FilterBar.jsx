@@ -76,6 +76,7 @@ export default function FilterBar({
       assignedDept:   "",
       assignedStatus: "",
       type:           "",
+      priority:       "",
       startDate:      null,
       endDate:        null,
     });
@@ -182,6 +183,25 @@ export default function FilterBar({
                 >
                   <option value="">All</option>
                   {assignedStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={12} />
+              </div>
+            </div>
+
+            {/* Urgency Level */}
+            <div className="flex flex-col gap-1 min-w-[90px] flex-1 sm:flex-none sm:min-w-[110px]">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Urgency</label>
+              <div className="relative">
+                <select
+                  value={activeFilters.priority || ""}
+                  onChange={(e) => updateFilter("priority", e.target.value)}
+                  className={selectStyle}
+                >
+                  <option value="">All</option>
+                  <option value="Overdue">Overdue</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
                 </select>
                 <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={12} />
               </div>
