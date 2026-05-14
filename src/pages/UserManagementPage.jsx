@@ -25,7 +25,7 @@ const ROLES = ["Requestor", "RM", "HOD", "DeptHOD", "Management", "Admin"];
 const DEPARTMENTS = [
   "Academic", "Accounts", "Admin", "Animation", "Broadcasting", 
   "Business Development", "Corporate Communications", "Documentation", 
-  "Food Committee", "Govt. Relations", "HR", "Interns", "Management", 
+  "Food Committee", "Game Development", "Govt. Relations", "HR", "Interns", "Management", 
   "Marketing", "Operation", "Purchase", "RTS Help Desk", "Software", 
   "Store", "System admin", "TA Committee", "Technical Support"
 ];

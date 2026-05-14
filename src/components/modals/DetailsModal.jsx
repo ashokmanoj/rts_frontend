@@ -6,7 +6,7 @@ import { sanitizeUrl } from "../../utils/security";
 import StatusBadge from "../table/StatusBadge";
 import ChatPanel   from "../chat/ChatPanel";
 
-const DEPARTMENTS = ["Academic","Accounts","Admin","Animation","Broadcasting","Business Development","Corporate Communications","Documentation","Food Committee","Govt. Relations","HR","Management","Marketing","Operation","Purchase","RTS Help Desk","Software","Store","System admin","TA Committee","Technical Support"];
+const DEPARTMENTS = ["Academic","Accounts","Admin","Animation","Broadcasting","Business Development","Corporate Communications","Documentation","Food Committee","Game Development","Govt. Relations","HR","Management","Marketing","Operation","Purchase","RTS Help Desk","Software","Store","System admin","TA Committee","Technical Support"];
 
 function ImageLightbox({ src, fileName, onClose }) {
   return (

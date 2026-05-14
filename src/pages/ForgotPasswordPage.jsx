@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="bg-white shadow-2xl rounded-3xl border border-slate-200 overflow-hidden">
           <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 p-8 text-center">
-            <h1 className="text-3xl font-black text-white tracking-tight">RTS SYSTEM</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">TELE-RTS</h1>
             <p className="text-indigo-200 text-sm mt-1 font-medium">Password Recovery</p>
           </div>
 

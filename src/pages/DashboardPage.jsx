@@ -212,157 +212,172 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-3 sm:p-6 font-sans text-[12px]">
-      {isIntern && (
-        <div className="flex flex-wrap justify-between items-center gap-3 mb-6 bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-              <span className="font-black text-xs">{(currentUser?.name || "??").slice(0, 2).toUpperCase()}</span>
+    <div className="h-dvh bg-[#f8fafc] font-sans text-[12px] flex flex-col overflow-hidden">
+
+      {/* ── Header: intern bar or FilterBar (shrinks to content) ────────────── */}
+      <div className="flex-shrink-0 px-3 sm:px-6 pt-3 sm:pt-5">
+        {isIntern ? (
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-3 bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                <span className="font-black text-xs">{(currentUser?.name || "??").slice(0, 2).toUpperCase()}</span>
+              </div>
+              <div>
+                <p className="text-[12px] font-black text-slate-800 leading-tight">{currentUser?.name}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">User ID: {currentUser?.empId}</p>
+                <p className="text-[10px] text-indigo-500 font-black uppercase tracking-tight">{currentUser?.dept}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[12px] font-black text-slate-800 leading-tight">{currentUser?.name}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">User ID: {currentUser?.empId}</p>
-              <p className="text-[10px] text-indigo-500 font-black uppercase tracking-tight">{currentUser?.dept}</p>
-            </div>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-[12px] font-black transition-all active:scale-95 shadow-sm"
+            >
+              <LogOut size={16} /> LOGOUT
+            </button>
           </div>
-          <button 
-            onClick={onLogout}
-            className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-xl text-[12px] font-black transition-all active:scale-95 shadow-sm"
-          >
-            <LogOut size={16} /> LOGOUT
-          </button>
-        </div>
-      )}
-      {!isIntern && (
-        <FilterBar
-          currentUser={currentUser}
-          filters={filters}
-          filterOptions={filterOptions}
-          requestCount={pagination.total}
-          onFilterChange={handleFilterChange}
-          onSearchChange={handleSearchChange}
-          onAddRequest={() => setActiveModal("add")}
-          onShowInstructions={() => setShowInstructions(true)}
-          onLogout={onLogout}
-          onSwitchRole={onSwitchRole}
-        />
-      )}
-
-      {/* ── Tab Navigation ─────────────────────────────────────────────────── */}
-      {(() => {
-        const loc              = currentUser?.location?.toLowerCase() || '';
-        const isBengaluru      = loc.includes('bangalore') || loc.includes('bengaluru') || loc.includes('ngal');
-        const isInternRole     = currentUser?.role === 'Intern';
-        const isRequestorRole  = currentUser?.role === 'Requestor';
-        const isFoodReportHOD  = currentUser?.role === 'DeptHOD' &&
-                                  ['HR', 'Food Committee'].includes(currentUser?.dept);
-        const showFoodTab      = (isRequestorRole || isInternRole) && isBengaluru;
-        const isHRDeptHOD      = currentUser?.role === 'DeptHOD' && currentUser?.dept === 'HR';
-        const showMgmtTab      = isHRDeptHOD;
-
-        return (
-          <div className="flex items-center gap-1 mb-4 bg-white border border-slate-200 rounded-xl p-1 w-fit max-w-full overflow-x-auto shadow-sm">
-            {!isInternRole && (
-              <button
-                onClick={() => setActiveTab("requests")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
-                  activeTab === "requests"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                <ClipboardList size={14} /> Requests
-              </button>
-            )}
-            {showFoodTab && (
-              <button
-                onClick={() => setActiveTab("food")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
-                  activeTab === "food"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                <UtensilsCrossed size={14} /> Food Request
-              </button>
-            )}
-            {showMgmtTab && (
-              <button
-                onClick={() => setActiveTab("management")}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
-                  activeTab === "management"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                <Users size={14} /> User Management
-              </button>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* ── User Management Tab ────────────────────────────────────────────── */}
-      {activeTab === "management" && (
-        <UserManagementPage currentUser={currentUser} />
-      )}
-
-      {/* ── Food Tab ───────────────────────────────────────────────────────── */}
-      {activeTab === "food" && (
-        <FoodPage currentUser={currentUser} />
-      )}
-
-      {/* ── Requests Tab ───────────────────────────────────────────────────── */}
-      {activeTab === "requests" && <>
-
-      {/* Loading overlay for table while filtering */}
-      <div className={`transition-opacity duration-200 ${isFiltering ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-        <RequestTable
-          requests={requests}
-          currentUser={currentUser}
-          onOpenDetails={handleOpenDetails}
-          onMarkUnread={(id) => markRequestUnread(id).then(() => loadRequests(currentPage, filters, true))}
-          onAcknowledge={handleAcknowledge}
-        />
+        ) : (
+          <FilterBar
+            currentUser={currentUser}
+            filters={filters}
+            filterOptions={filterOptions}
+            requestCount={pagination.total}
+            onFilterChange={handleFilterChange}
+            onSearchChange={handleSearchChange}
+            onAddRequest={() => setActiveModal("add")}
+            onShowInstructions={() => setShowInstructions(true)}
+            onLogout={onLogout}
+            onSwitchRole={onSwitchRole}
+          />
+        )}
       </div>
 
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <button onClick={() => setCurrentPage(prev => prev - 1)} disabled={!pagination.hasPrev}
-            className="px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-all">
-            ← Prev
-          </button>
-          <span className="text-slate-500 font-medium">
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          <button onClick={() => setCurrentPage(prev => prev + 1)} disabled={!pagination.hasNext}
-            className="px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-all">
-            Next →
-          </button>
-        </div>
-      )}
+      {/* ── Tab Navigation (shrinks to content) ─────────────────────────────── */}
+      <div className="flex-shrink-0 px-3 sm:px-6 pt-2 pb-1">
+        {(() => {
+          const loc             = currentUser?.location?.toLowerCase() || '';
+          const isBengaluru     = loc.includes('bangalore') || loc.includes('bengaluru') || loc.includes('ngal');
+          const isInternRole    = currentUser?.role === 'Intern';
+          const isRequestorRole = currentUser?.role === 'Requestor';
+          const isFoodReportHOD = currentUser?.role === 'DeptHOD' &&
+                                   ['HR', 'Food Committee'].includes(currentUser?.dept);
+          const showFoodTab     = ((isRequestorRole || isInternRole) && isBengaluru) || isFoodReportHOD;
+          const isHRDeptHOD     = currentUser?.role === 'DeptHOD' && currentUser?.dept === 'HR';
+          const showMgmtTab     = isHRDeptHOD;
 
-      {activeModal === "details" && selectedReq && (
-        <DetailsModal
-          req={selectedReq} chatLogs={chatLogs} currentUser={currentUser}
-          onClose={() => { setActiveModal(null); setSelectedReq(null); }}
-          onSendMessage={handleSendMessage} onApproval={handleApproval}
-          onAcknowledge={handleAcknowledge}
-          onOpenCloseTicket={(req) => setCloseTicketReq(req)}
-        />
-      )}
+          return (
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 w-fit max-w-full overflow-x-auto shadow-sm">
+              {!isInternRole && (
+                <button
+                  onClick={() => setActiveTab("requests")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    activeTab === "requests" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  <ClipboardList size={14} /> Requests
+                </button>
+              )}
+              {showFoodTab && (
+                <button
+                  onClick={() => setActiveTab("food")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    activeTab === "food" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  <UtensilsCrossed size={14} /> {isFoodReportHOD ? "Food Report" : "Food Request"}
+                </button>
+              )}
+              {showMgmtTab && (
+                <button
+                  onClick={() => setActiveTab("management")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    activeTab === "management" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  <Users size={14} /> User Management
+                </button>
+              )}
+            </div>
+          );
+        })()}
+      </div>
 
-      {closeTicketReq && (
-        <CloseTicketModal req={closeTicketReq} onClose={() => setCloseTicketReq(null)} onConfirmClose={handleConfirmCloseTicket} />
-      )}
+      {/* ── Main content: takes all remaining height ─────────────────────────── */}
+      <div className="flex-1 min-h-0 px-3 sm:px-6 pb-7 sm:pb-9 overflow-hidden">
 
-      {activeModal === "add" && (
-        <AddRequestModal onClose={() => setActiveModal(null)} onSubmit={handleAddRequest} currentUser={currentUser} />
-      )}
+        {/* User Management Tab */}
+        {activeTab === "management" && (
+          <div className="h-full overflow-y-auto">
+            <UserManagementPage currentUser={currentUser} />
+          </div>
+        )}
 
-      {showInstructions && <InstructionsModal onClose={() => setShowInstructions(false)} />}
+        {/* Food Tab */}
+        {activeTab === "food" && (
+          <div className="h-full overflow-y-auto">
+            <FoodPage currentUser={currentUser} />
+          </div>
+        )}
 
-      </>}
+        {/* Requests Tab */}
+        {activeTab === "requests" && (
+          <div className="h-full flex flex-col gap-2">
+
+            {/* Table — flex-1 so it fills remaining space above pagination */}
+            <div className={`flex-1 min-h-0 transition-opacity duration-200 ${isFiltering ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+              <RequestTable
+                requests={requests}
+                currentUser={currentUser}
+                onOpenDetails={handleOpenDetails}
+                onMarkUnread={(id) => markRequestUnread(id).then(() => loadRequests(currentPage, filters, true))}
+                onAcknowledge={handleAcknowledge}
+              />
+            </div>
+
+            {/* Pagination — always visible above taskbar */}
+            {pagination.totalPages > 1 && (
+              <div className="flex-shrink-0 flex items-center justify-center gap-3 py-2 pb-3">
+                <button
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  disabled={!pagination.hasPrev}
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-all"
+                >
+                  ← Prev
+                </button>
+                <span className="text-slate-500 font-medium">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  disabled={!pagination.hasNext}
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 font-bold text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition-all"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+
+            {/* Modals — fixed position, no layout impact */}
+            {activeModal === "details" && selectedReq && (
+              <DetailsModal
+                req={selectedReq} chatLogs={chatLogs} currentUser={currentUser}
+                onClose={() => { setActiveModal(null); setSelectedReq(null); }}
+                onSendMessage={handleSendMessage} onApproval={handleApproval}
+                onAcknowledge={handleAcknowledge}
+                onOpenCloseTicket={(req) => setCloseTicketReq(req)}
+              />
+            )}
+            {closeTicketReq && (
+              <CloseTicketModal req={closeTicketReq} onClose={() => setCloseTicketReq(null)} onConfirmClose={handleConfirmCloseTicket} />
+            )}
+            {activeModal === "add" && (
+              <AddRequestModal onClose={() => setActiveModal(null)} onSubmit={handleAddRequest} currentUser={currentUser} />
+            )}
+            {showInstructions && <InstructionsModal onClose={() => setShowInstructions(false)} />}
+
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

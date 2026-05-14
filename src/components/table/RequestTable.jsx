@@ -50,8 +50,8 @@ export default function RequestTable({ requests, currentUser, onOpenDetails, onM
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-xl border overflow-auto" style={{maxHeight:"calc(100dvh - 280px)", minHeight:"200px"}}>
-        <table className="w-full border-collapse border-b border-black min-w-[860px]">
+      <div className="bg-white rounded-xl shadow-xl border overflow-auto h-full" style={{minHeight:"200px"}}>
+        <table className="w-full border-collapse border-r border-black min-w-[860px]">
           <thead>
             <tr className="text-slate-800 uppercase font-black text-[13px]">
               <th colSpan="11" className="sticky top-0 bg-blue-300 border border-black p-3 text-center z-20">

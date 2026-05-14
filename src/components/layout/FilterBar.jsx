@@ -93,6 +93,7 @@ export default function FilterBar({
 
   const initials = (currentUser?.name || "??").slice(0, 2).toUpperCase();
   const isAdmin  = currentUser?.role === "Admin";
+  const isApproverRole = ["RM", "HOD", "DeptHOD"].includes(currentUser?.role);
   const isInternsDept = currentUser?.dept?.toLowerCase() === 'interns';
 
   // Shared select style
@@ -256,7 +257,7 @@ export default function FilterBar({
             </div>
           )}
 
-          {!isAdmin && !isInternsDept && (
+          {!isAdmin && !isInternsDept && !isApproverRole && (
             <button
               onClick={onAddRequest}
               className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-xl font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 text-[12px] whitespace-nowrap"

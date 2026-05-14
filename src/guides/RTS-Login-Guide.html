@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TELE-RTS Login & Account Access Guide</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ── Page wrapper ─────────────────────────────────── */
+    .page {
+      width: 794px;
+      margin: 0 auto;
+      background: #fff;
+    }
+
+    /* ── Cover ────────────────────────────────────────── */
+    .cover {
+      background: linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #1e1b4b 100%);
+      padding: 72px 60px;
+      text-align: center;
+      page-break-after: always;
+    }
+    .cover-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      margin-bottom: 28px;
+      border: 2px solid rgba(255,255,255,0.25);
+    }
+    .cover-logo svg { width: 44px; height: 44px; fill: #fff; }
+    .cover h1 {
+      font-size: 40px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+    .cover-subtitle {
+      color: #a5b4fc;
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 40px;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      color: #e0e7ff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px;
+      padding: 6px 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 60px;
+    }
+    .cover-meta {
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+    }
+    .cover-divider {
+      width: 60px; height: 3px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 999px;
+      margin: 0 auto 40px;
+    }
+
+    /* ── Content sections ─────────────────────────────── */
+    .content { padding: 50px 60px; }
+
+    /* ── Section title ────────────────────────────────── */
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      margin-top: 40px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .section-heading:first-child { margin-top: 0; }
+    .section-num {
+      width: 32px; height: 32px;
+      background: #1e40af;
+      color: #fff;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .section-heading h2 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1e293b;
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Step cards ───────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 16px; }
+    .step {
+      display: flex;
+      gap: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      background: #eff6ff;
+      border: 2px solid #bfdbfe;
+      color: #1d4ed8;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      font-size: 12px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body { flex: 1; }
+    .step-title {
+      font-weight: 800;
+      font-size: 13px;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    .step-desc {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    /* ── UI mock ──────────────────────────────────────── */
+    .ui-mock {
+      background: #fff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .ui-mock-header {
+      background: linear-gradient(90deg, #1d4ed8, #3730a3);
+      padding: 18px 24px;
+      text-align: center;
+    }
+    .ui-mock-header .app-name {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+    .ui-mock-header .app-sub {
+      color: #a5b4fc;
+      font-size: 10px;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+    .ui-mock-body { padding: 20px 24px; }
+
+    /* ── Form field mock ──────────────────────────────── */
+    .field-mock {
+      margin-bottom: 12px;
+    }
+    .field-mock-input {
+      width: 100%;
+      padding: 11px 14px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .field-mock-input.highlight {
+      border-color: #6366f1;
+      background: #f0f0ff;
+      color: #4338ca;
+      font-weight: 600;
+    }
+    .field-mock-input .icon { font-size: 14px; }
+    .btn-mock {
+      width: 100%;
+      padding: 13px;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      border-radius: 10px;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .link-mock {
+      text-align: center;
+      color: #4f46e5;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    /* ── Highlight badge ──────────────────────────────── */
+    .highlight-box {
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+    .highlight-box .hb-title {
+      font-weight: 800;
+      color: #1d4ed8;
+      font-size: 12px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .highlight-box .hb-body {
+      font-size: 12px;
+      color: #3b4f6b;
+      line-height: 1.65;
+    }
+
+    .warning-box {
+      background: #fffbeb;
+      border: 1.5px solid #fcd34d;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+    .warning-box .hb-title { color: #b45309; }
+    .warning-box .hb-body  { color: #78350f; }
+
+    .success-box {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+    .success-box .hb-title { color: #15803d; }
+    .success-box .hb-body  { color: #14532d; }
+
+    /* ── Tag / pill ───────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .tag-blue   { background: #dbeafe; color: #1d4ed8; }
+    .tag-green  { background: #dcfce7; color: #15803d; }
+    .tag-amber  { background: #fef3c7; color: #b45309; }
+    .tag-red    { background: #fee2e2; color: #b91c1c; }
+    .tag-purple { background: #ede9fe; color: #6d28d9; }
+
+    /* ── Role cards ───────────────────────────────────── */
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .role-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .role-card .rc-name {
+      font-weight: 800;
+      font-size: 12px;
+      color: #1e293b;
+    }
+    .role-card .rc-desc {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* ── Divider ──────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1.5px solid #e2e8f0;
+      margin: 32px 0;
+    }
+
+    /* ── Table ────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 12px;
+    }
+    thead tr { background: #1e40af; color: #fff; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 700; }
+    tbody tr:nth-child(odd)  { background: #f8fafc; }
+    tbody tr:nth-child(even) { background: #fff; }
+    tbody td { padding: 9px 14px; color: #334155; border-bottom: 1px solid #f1f5f9; }
+
+    /* ── Footer ───────────────────────────────────────── */
+    .footer {
+      background: #0f172a;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0;
+    }
+    .footer-left { color: #94a3b8; font-size: 11px; }
+    .footer-right { color: #64748b; font-size: 11px; }
+
+    /* ── Page break control ───────────────────────────── */
+    .pb-before { page-break-before: always; }
+    .pb-avoid  { page-break-inside: avoid; }
+
+    /* ── Print ────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; }
+      .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .ui-mock-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .btn-mock { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════════════════════════════════════════
+       COVER PAGE
+  ════════════════════════════════════════════════════════════ -->
+  <div class="cover">
+    <div class="cover-logo">
+      <!-- Shield icon -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.5-2.33 6.79-5 7.93C9.33 17.79 7 14.5 7 11V7.18L12 5zm-1 3v4h2V8h-2zm0 5v2h2v-2h-2z"/>
+      </svg>
+    </div>
+    <h1>TELE-RTS</h1>
+    <p class="cover-subtitle">Request Tracking System</p>
+    <div class="cover-divider"></div>
+    <div class="cover-badge">Login &amp; Account Access Guide</div>
+    <p class="cover-subtitle" style="margin-bottom:8px; font-size:13px; color:#c7d2fe;">Step-by-Step Visual Guide</p>
+    <p class="cover-meta">Internal Use Only &nbsp;·&nbsp; Tele Education Portal &nbsp;·&nbsp; v1.0</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PAGE 2 — LOGIN STEPS
+  ════════════════════════════════════════════════════════════ -->
+  <div class="content">
+
+    <!-- Section 1 -->
+    <div class="section-heading">
+      <div class="section-num">1</div>
+      <h2>Accessing the Login Page</h2>
+    </div>
+
+    <div class="steps pb-avoid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Open your browser</div>
+          <div class="step-desc">Use Google Chrome or Microsoft Edge for the best experience.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Go to the TELE-RTS portal</div>
+          <div class="step-desc">
+            Type the portal URL in the address bar and press <span class="tag tag-blue">Enter</span>.<br/>
+            URL: <strong>https://telerts.com</strong>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">The login screen will appear</div>
+          <div class="step-desc">You will see the <strong>TELE-RTS</strong> login card with the email and password fields.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="section-heading">
+      <div class="section-num">2</div>
+      <h2>Logging In — Step by Step</h2>
+    </div>
+
+    <!-- UI Mock -->
+    <div class="ui-mock pb-avoid">
+      <div class="ui-mock-header">
+        <div class="app-name">TELE-RTS</div>
+        <div class="app-sub">Tele Education Portal ( Internal Use Only )</div>
+      </div>
+      <div class="ui-mock-body">
+        <div class="field-mock">
+          <div class="field-mock-input highlight">
+            <span class="icon">✉</span> Enter factohr email address
+          </div>
+        </div>
+        <div class="field-mock">
+          <div class="field-mock-input">
+            <span class="icon">🔒</span> Password
+          </div>
+        </div>
+        <div class="btn-mock">LOGIN</div>
+        <div class="link-mock">Forgot password?</div>
+      </div>
+    </div>
+
+    <div class="steps pb-avoid" style="margin-top:16px;">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Enter your factohr email address</div>
+          <div class="step-desc">
+            Click on the <span class="tag tag-blue">Enter factohr email address</span> field and type your registered factohr email.<br/>
+            Example: <strong>yourname@factohr.com</strong>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Enter your password</div>
+          <div class="step-desc">
+            Click on the <span class="tag tag-blue">Password</span> field and type your password.<br/>
+            Use the <strong>👁 eye icon</strong> on the right to show or hide your password.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Click LOGIN</div>
+          <div class="step-desc">Click the blue <span class="tag tag-blue">LOGIN</span> button. You will be logged in and taken to the dashboard.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box pb-avoid">
+      <div class="hb-title">&#x2139;&#xFE0F; Important — Use Your Factohr Email</div>
+      <div class="hb-body">
+        You <strong>must use your factohr email address</strong> to log in — not a personal Gmail or other email.<br/>
+        Your factohr email is the one registered with your employee account in the HR system.<br/>
+        Format: <strong>yourname@factohr.com</strong> &nbsp;(exact format given by HR / Admin)
+      </div>
+    </div>
+ <!-- Section 4 -->
+    <div class="section-heading pb-before">
+      <div class="section-num">3</div>
+      <h2>Forgot Password</h2>
+    </div>
+    <div class="steps pb-avoid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Click "Forgot password?" on the login page</div>
+          <div class="step-desc">The link is located below the LOGIN button.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Enter your factohr email address</div>
+          <div class="step-desc">Type the same factohr email you use to log in and click <span class="tag tag-blue">Send Reset Link</span>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Check your email inbox</div>
+          <div class="step-desc">
+            You will receive a <strong>Password Reset</strong> email from TELE-RTS.<br/>
+            Click the <span class="tag tag-blue">Reset My Password</span> button in the email.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Set a new password</div>
+          <div class="step-desc">Enter and confirm your new password on the reset page, then click Save.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="section-heading pb-before">
+      <div class="section-num">4</div>
+      <h2>Role Selection (Multi-Role Users Only)</h2>
+    </div>
+
+    <p style="font-size:12px; color:#475569; margin-bottom:16px;">
+      If your account is assigned more than one role (e.g., Requestor <em>and</em> HOD), you will see a
+      <strong>Role Selection</strong> screen after entering your credentials.
+    </p>
+
+    <div class="steps pb-avoid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">A list of your roles will appear</div>
+          <div class="step-desc">Each role card shows the role name and the department it belongs to.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Click the role you want to use today</div>
+          <div class="step-desc">You will be taken directly to the dashboard for that role. You can switch roles later from the top-right profile menu.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-grid pb-avoid">
+      <div class="role-card">
+        <div class="rc-name">Requestor</div>
+        <div class="rc-desc">Submit and track your own requests</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-name">Reporting Manager (RM)</div>
+        <div class="rc-desc">Review and approve team requests</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-name">Head of Department (HOD)</div>
+        <div class="rc-desc">Department-level approval and oversight</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-name">Department HOD</div>
+        <div class="rc-desc">Handle assigned department requests</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-name">Management</div>
+        <div class="rc-desc">Full visibility across all departments</div>
+      </div>
+      <div class="role-card">
+        <div class="rc-name">Admin</div>
+        <div class="rc-desc">System administration and user management</div>
+      </div>
+    </div>
+
+   
+
+    
+
+    <div class="warning-box pb-avoid">
+      <div class="hb-title">&#x26A0;&#xFE0F; Reset link expires in 60 minutes</div>
+      <div class="hb-body">
+        The password reset link is valid for <strong>60 minutes</strong> only. If it expires, go back to the login page and request a new reset link.
+      </div>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="section-heading">
+      <div class="section-num">5</div>
+      <h2>Common Login Issues</h2>
+    </div>
+
+    <table class="pb-avoid">
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Possible Cause</th>
+          <th>Solution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Invalid credentials</td>
+          <td>Wrong email or password</td>
+          <td>Re-enter your factohr email and password carefully</td>
+        </tr>
+        <tr>
+          <td>Account not found</td>
+          <td>Email not registered in RTS</td>
+          <td>Contact HR / Admin to create your account</td>
+        </tr>
+        <tr>
+          <td>Password forgotten</td>
+          <td>—</td>
+          <td>Use "Forgot password?" on the login page</td>
+        </tr>
+        <tr>
+          <td>Reset link expired</td>
+          <td>Used after 60 minutes</td>
+          <td>Request a new reset link from the login page</td>
+        </tr>
+        <tr>
+          <td>Page not loading</td>
+          <td>Network / browser issue</td>
+          <td>Check internet connection; try clearing browser cache</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="success-box pb-avoid" style="margin-top:24px;">
+      <div class="hb-title">&#x2705; Need Help?</div>
+      <div class="hb-body">
+        If you cannot log in after following these steps, please contact your <strong>System Administrator</strong> or raise a support ticket through the HR department.
+      </div>
+    </div>
+
+    <div style="height:40px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       FOOTER
+  ════════════════════════════════════════════════════════════ -->
+  <div class="footer">
+    <div class="footer-left">© TELE-RTS &nbsp;·&nbsp; Internal Use Only</div>
+    <div class="footer-right">Login &amp; Account Access Guide &nbsp;·&nbsp; v1.0</div>
+  </div>
+
+</div>
+</body>
+</html>

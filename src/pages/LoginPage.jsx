@@ -126,7 +126,7 @@ export default function LoginPage({ onLogin }) {
               /* ── Login form ───────────────────────────────────────────────── */
               <form onSubmit={handleSubmit} className="space-y-3">
                 <input
-                  type="text" placeholder="Email address" value={email}
+                  type="text" placeholder="Enter factohr email address" value={email}
                   onChange={(e) => setEmail(e.target.value)} required
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                 />

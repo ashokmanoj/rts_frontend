@@ -28,8 +28,9 @@ function RmBadge({ status }) {
 
 // ── Approval action panel (inline, per row) ───────────────────────────────────
 function ActionPanel({ row, onSubmit, onCancel, loading }) {
-  const [decision,  setDecision]  = useState(null); // "Approved" | "Rejected"
-  const [comment,   setComment]   = useState("");
+  const isGnRow = row.isGnRoute;
+  const [decision, setDecision] = useState(null);
+  const [comment,  setComment]  = useState("");
 
   const handleConfirm = () => {
     if (!decision) return;
@@ -39,10 +40,10 @@ function ActionPanel({ row, onSubmit, onCancel, loading }) {
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
       <p className="text-xs font-black text-amber-800 uppercase tracking-wide">
-        HOD Decision — {row.purpose}
+        Management Decision — {row.purpose}
       </p>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setDecision("Approved")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all border-2 ${
@@ -53,6 +54,18 @@ function ActionPanel({ row, onSubmit, onCancel, loading }) {
         >
           <CheckCircle2 size={14} /> Approve
         </button>
+        {isGnRow && (
+          <button
+            onClick={() => setDecision("Checking")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all border-2 ${
+              decision === "Checking"
+                ? "bg-blue-600 text-white border-blue-600 shadow"
+                : "bg-white text-blue-700 border-blue-300 hover:bg-blue-50"
+            }`}
+          >
+            <Clock size={14} /> Checking
+          </button>
+        )}
         <button
           onClick={() => setDecision("Rejected")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all border-2 ${
@@ -63,6 +76,18 @@ function ActionPanel({ row, onSubmit, onCancel, loading }) {
         >
           <XCircle size={14} /> Reject
         </button>
+        {isGnRow && (
+          <button
+            onClick={() => setDecision("Close")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-black transition-all border-2 ${
+              decision === "Close"
+                ? "bg-slate-700 text-white border-slate-700 shadow"
+                : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <XCircle size={14} /> Close Ticket
+          </button>
+        )}
       </div>
 
       <textarea
@@ -114,7 +139,10 @@ function RequestRow({ row, index, onActionComplete }) {
   const [actioning,  setActioning]  = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const isPending = !row.hodStatus || row.hodStatus === "--" || row.hodStatus === "Checking";
+  const isGnRow   = row.isGnRoute;
+  const isPending = isGnRow
+    ? !row.isClosed
+    : (!row.hodStatus || row.hodStatus === "--" || row.hodStatus === "Checking");
 
   const handleSubmit = async (id, decision, comment) => {
     setSubmitting(true);
@@ -142,7 +170,12 @@ function RequestRow({ row, index, onActionComplete }) {
         <td className="px-3 py-3 text-xs text-slate-600 whitespace-nowrap">{row.date}</td>
         {/* Requestor */}
         <td className="px-3 py-3">
-          <p className="text-xs font-black text-slate-800">{row.name}</p>
+          <p className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+            {row.name}
+            {isGnRow && (
+              <span className="text-[9px] font-black bg-purple-600 text-white px-1.5 py-0.5 rounded-full leading-none">GN</span>
+            )}
+          </p>
           <p className="text-[10px] text-slate-500">{row.empId} · {row.dept}</p>
           <p className="text-[10px] text-slate-400">{row.designation}</p>
         </td>
@@ -257,13 +290,17 @@ export default function ManagementPortal({ currentUser, onLogout }) {
     load(true);
   }, [load]);
 
-  const pendingCount = requests.filter(r => !r.hodStatus || r.hodStatus === "--" || r.hodStatus === "Checking").length;
+  const pendingCount = requests.filter(r =>
+    r.isGnRoute
+      ? !r.isClosed
+      : (!r.hodStatus || r.hodStatus === "--" || r.hodStatus === "Checking")
+  ).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 font-sans">
+    <div className="h-dvh bg-gradient-to-br from-amber-50 to-orange-50 font-sans flex flex-col overflow-hidden">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="bg-gradient-to-r from-amber-600 to-orange-600 shadow-lg">
+      <header className="flex-shrink-0 bg-gradient-to-r from-amber-600 to-orange-600 shadow-lg">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -290,17 +327,17 @@ export default function ManagementPortal({ currentUser, onLogout }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5">
+      <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 overflow-hidden">
 
         {/* ── Stats bar ──────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="flex-shrink-0 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-4 flex items-center gap-4">
             <div className="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center">
               <Clock size={22} className="text-amber-600" />
             </div>
             <div>
               <p className="text-2xl font-black text-slate-800">{pendingCount}</p>
-              <p className="text-xs text-slate-500 font-bold">Pending HOD Approval</p>
+              <p className="text-xs text-slate-500 font-bold">Pending Approval</p>
             </div>
           </div>
 
@@ -332,9 +369,9 @@ export default function ManagementPortal({ currentUser, onLogout }) {
         </div>
 
         {/* ── Toolbar ────────────────────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-black text-slate-700 uppercase tracking-wide flex items-center gap-2 flex-wrap">
-            HOD Approval Requests
+            Management Approval Requests
             {pendingCount > 0 && (
               <span className="bg-amber-100 text-amber-700 text-[11px] font-black px-2 py-0.5 rounded-full">
                 {pendingCount} Pending
@@ -358,12 +395,12 @@ export default function ManagementPortal({ currentUser, onLogout }) {
 
         {/* ── Content ────────────────────────────────────────────────────────── */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <div className="flex-1 flex flex-col items-center justify-center gap-3">
             <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-slate-500 font-medium">Loading pending requests…</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <div className="flex-1 bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
             <AlertCircle size={32} className="text-red-400 mx-auto mb-2" />
             <p className="text-sm font-bold text-red-700">{error}</p>
             <button
@@ -374,40 +411,38 @@ export default function ManagementPortal({ currentUser, onLogout }) {
             </button>
           </div>
         ) : requests.length === 0 ? (
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-16 flex flex-col items-center gap-3">
+          <div className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm p-16 flex flex-col items-center justify-center gap-3">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
               <CheckCircle2 size={32} className="text-emerald-500" />
             </div>
-            <p className="text-base font-black text-slate-700">No HOD requests found.</p>
-            <p className="text-sm text-slate-400">Requests from HOD-role users will appear here.</p>
+            <p className="text-base font-black text-slate-700">No pending requests found.</p>
+            <p className="text-sm text-slate-400">HOD requests and GN employee tickets will appear here.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-amber-600 text-white text-[11px] font-black uppercase tracking-wide">
-                    <th className="px-3 py-3 text-center w-10">Sl.</th>
-                    <th className="px-3 py-3 text-left">Date</th>
-                    <th className="px-3 py-3 text-left">Requestor</th>
-                    <th className="px-3 py-3 text-left">Purpose / Description</th>
-                    <th className="px-3 py-3 text-center">RM Status</th>
-                    <th className="px-3 py-3 text-center">HOD Status</th>
-                    <th className="px-3 py-3 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map((row, idx) => (
-                    <RequestRow
-                      key={row.id}
-                      row={row}
-                      index={idx}
-                      onActionComplete={handleActionComplete}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-auto">
+            <table className="w-full border-collapse">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-amber-600 text-white text-[11px] font-black uppercase tracking-wide">
+                  <th className="px-3 py-3 text-center w-10">Sl.</th>
+                  <th className="px-3 py-3 text-left">Date</th>
+                  <th className="px-3 py-3 text-left">Requestor</th>
+                  <th className="px-3 py-3 text-left">Purpose / Description</th>
+                  <th className="px-3 py-3 text-center">RM Status</th>
+                  <th className="px-3 py-3 text-center">HOD Status</th>
+                  <th className="px-3 py-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((row, idx) => (
+                  <RequestRow
+                    key={row.id}
+                    row={row}
+                    index={idx}
+                    onActionComplete={handleActionComplete}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </main>
