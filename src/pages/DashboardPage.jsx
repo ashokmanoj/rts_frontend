@@ -48,6 +48,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   const selectedReqRef = useRef(null);
   const isFetchingRef = useRef(false);
   const debounceTimerRef = useRef(null);
+  const prevRoleKeyRef = useRef(null);
 
   const currentUser = currentUserProp || getStoredUser();
 
@@ -121,6 +122,18 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   useEffect(() => {
     loadFilterOptions();
   }, [loadFilterOptions]);
+
+  // ── Role Switch Re-fetch ──────────────────────────────────────────────────
+  useEffect(() => {
+    const newKey = `${currentUserProp?.role}-${currentUserProp?.dept}`;
+    if (prevRoleKeyRef.current !== null && prevRoleKeyRef.current !== newKey) {
+      const cleared = { name: "", dept: "", assignedDept: "", assignedStatus: "", type: "", priority: "", startDate: null, endDate: null, search: "" };
+      setFilters(cleared);
+      setCurrentPage(1);
+      loadFilterOptions();
+    }
+    prevRoleKeyRef.current = newKey;
+  }, [currentUserProp?.role, currentUserProp?.dept, loadFilterOptions]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleFilterChange = (newFilters) => {

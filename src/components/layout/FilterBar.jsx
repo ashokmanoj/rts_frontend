@@ -8,7 +8,8 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, ChevronDown, LogOut, BookOpen, X, Calendar, BarChart3, User, Users, Shield, Building2, Briefcase, Settings, Heart, UtensilsCrossed, CheckCircle2, RefreshCw } from "lucide-react";
+import { Search, Plus, ChevronDown, LogOut, BookOpen, X, Calendar, BarChart3, User, Users, Shield, Building2, Briefcase, Settings, Heart, UtensilsCrossed, CheckCircle2, RefreshCw, Bell, BellOff } from "lucide-react";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
 
 // React Datepicker
 import DatePicker from "react-datepicker";
@@ -94,6 +95,8 @@ export default function FilterBar({
   const initials = (currentUser?.name || "??").slice(0, 2).toUpperCase();
   const isAdmin  = currentUser?.role === "Admin";
   const isApproverRole = ["RM", "HOD", "DeptHOD"].includes(currentUser?.role);
+
+  const { isSupported: pushSupported, isSubscribed, permission, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
   const isInternsDept = currentUser?.dept?.toLowerCase() === 'interns';
 
   // Shared select style
@@ -263,6 +266,30 @@ export default function FilterBar({
               className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-xl font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 text-[12px] whitespace-nowrap"
             >
               <Plus size={16} /> <span className="hidden xs:inline">ADD </span>REQUEST
+            </button>
+          )}
+
+          {/* Notification Bell */}
+          {pushSupported && permission !== "denied" && (
+            <button
+              onClick={isSubscribed ? pushUnsubscribe : pushSubscribe}
+              disabled={pushLoading}
+              title={isSubscribed ? "Notifications on — click to turn off" : "Turn on notifications"}
+              className={`relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all active:scale-95 disabled:opacity-50 ${
+                isSubscribed
+                  ? "bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100"
+                  : "bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              }`}
+            >
+              {pushLoading
+                ? <RefreshCw size={15} className="animate-spin" />
+                : isSubscribed
+                ? <Bell size={15} />
+                : <BellOff size={15} />
+              }
+              {isSubscribed && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-500 rounded-full border border-white" />
+              )}
             </button>
           )}
 
