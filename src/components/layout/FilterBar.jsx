@@ -6,7 +6,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronDown, LogOut, BookOpen, X, Calendar, BarChart3, User, Users, Shield, Building2, Briefcase, Settings, Heart, UtensilsCrossed, CheckCircle2, RefreshCw, Bell, BellOff } from "lucide-react";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
@@ -96,8 +96,18 @@ export default function FilterBar({
   const isAdmin  = currentUser?.role === "Admin";
   const isApproverRole = ["RM", "HOD", "DeptHOD"].includes(currentUser?.role);
 
-  const { isSupported: pushSupported, isSubscribed, permission, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
+  const { isSupported: pushSupported, isSecure, isChecked, isSubscribed, permission, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
   const isInternsDept = currentUser?.dept?.toLowerCase() === 'interns';
+
+  // Auto-subscribe on login — fires once after the initial subscription check completes
+  const autoSubAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (!isChecked || autoSubAttemptedRef.current) return;
+    autoSubAttemptedRef.current = true;
+    if (pushSupported && isSecure && !isSubscribed && permission !== "denied") {
+      pushSubscribe();
+    }
+  }, [isChecked, pushSupported, isSecure, isSubscribed, permission, pushSubscribe]);
 
   // Shared select style
   const selectStyle = "w-full appearance-none bg-white border border-slate-200 py-1.5 pl-2 pr-6 rounded-lg text-slate-700 text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer transition-all hover:border-slate-300";

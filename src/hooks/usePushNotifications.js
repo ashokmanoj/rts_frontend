@@ -14,6 +14,7 @@ const IS_SECURE    = window.isSecureContext; // true on HTTPS or localhost
 
 export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isChecked,    setIsChecked]    = useState(false); // true once initial sub check completes
   const [permission,   setPermission]   = useState(
     IS_SUPPORTED ? Notification.permission : "denied"
   );
@@ -22,12 +23,13 @@ export function usePushNotifications() {
 
   // On mount: check if browser already has an active push subscription
   useEffect(() => {
-    if (!IS_SUPPORTED || !IS_SECURE) return;
+    if (!IS_SUPPORTED || !IS_SECURE) { setIsChecked(true); return; }
     navigator.serviceWorker
       .getRegistration("/sw.js")
       .then((reg) => reg?.pushManager?.getSubscription())
       .then((sub) => { if (sub) setIsSubscribed(true); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsChecked(true));
   }, []);
 
   const subscribe = useCallback(async () => {
@@ -100,6 +102,7 @@ export function usePushNotifications() {
   return {
     isSupported:  IS_SUPPORTED,
     isSecure:     IS_SECURE,
+    isChecked,
     isSubscribed,
     permission,
     loading,
