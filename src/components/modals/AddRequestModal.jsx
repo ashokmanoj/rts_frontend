@@ -319,7 +319,7 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
 
           {/* Description */}
           <textarea
-            className="w-full bg-slate-100 p-4 rounded-2xl text-center border-none h-28 focus:ring-2 focus:ring-indigo-500 resize-none font-medium outline-none text-[14px]"
+            className="w-full bg-slate-100 p-4 rounded-2xl text-left border-none h-28 focus:ring-2 focus:ring-indigo-500 resize-none font-medium outline-none text-[14px]"
             placeholder="Describe your request in detail..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
