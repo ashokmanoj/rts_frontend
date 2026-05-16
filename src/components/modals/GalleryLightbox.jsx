@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, ZoomIn, ZoomOut, RotateCw, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
-import { sanitizeUrl } from "../../utils/security";
+import { resolveFileUrl } from "../../utils/security";
 
 /**
  * Full-screen image gallery with:
@@ -233,7 +233,7 @@ export default function GalleryLightbox({ urls, fileNames, startIndex = 0, onClo
         {/* Centred image */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <img
-            src={sanitizeUrl(src)}
+            src={resolveFileUrl(src)}
             alt={fileName}
             draggable={false}
             className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
@@ -280,7 +280,7 @@ export default function GalleryLightbox({ urls, fileNames, startIndex = 0, onClo
                 i === idx ? "border-white scale-110 opacity-100" : "border-transparent opacity-40 hover:opacity-70"
               }`}
             >
-              <img src={sanitizeUrl(url)} alt="" className="w-full h-full object-cover" />
+              <img src={resolveFileUrl(url)} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>

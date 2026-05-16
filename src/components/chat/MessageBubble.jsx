@@ -7,7 +7,7 @@ import VoiceMessageBubble      from "./VoiceMessageBubble";
 import SpreadsheetPreviewModal from "../modals/SpreadsheetPreviewModal";
 import GalleryLightbox         from "../modals/GalleryLightbox";
 import { getAvatarClass, getInitials } from "../../utils/roleStyles";
-import { sanitizeUrl } from "../../utils/security";
+import { resolveFileUrl } from "../../utils/security";
 
 function getFileIcon(fileName = "") {
   const n = fileName.toLowerCase();
@@ -108,7 +108,7 @@ export default function MessageBubble({ log, onReply }) {
                 onClick={() => setLightbox(true)}
               >
                 <img
-                  src={sanitizeUrl(log.fileUrl)}
+                  src={resolveFileUrl(log.fileUrl)}
                   alt={log.fileName}
                   className="max-w-[220px] max-h-[170px] rounded-xl object-cover border border-slate-100 group-hover:brightness-90 transition-all"
                 />
@@ -136,7 +136,7 @@ export default function MessageBubble({ log, onReply }) {
             {/* ── Non-image, non-spreadsheet file — download link ── */}
             {hasFile && !log.isImage && !isSpreadsheet && (
               <a
-                href={sanitizeUrl(log.fileUrl)}
+                href={resolveFileUrl(log.fileUrl)}
                 download={log.fileName}
                 className={`flex items-center gap-2 ${bg} rounded-xl px-3 py-2 text-[11px] font-bold hover:brightness-95 transition-all`}
               >
@@ -148,7 +148,7 @@ export default function MessageBubble({ log, onReply }) {
 
             {/* ── Voice ── */}
             {hasVoice && (
-              <VoiceMessageBubble src={sanitizeUrl(log.voiceUrl)} duration={log.duration} />
+              <VoiceMessageBubble src={resolveFileUrl(log.voiceUrl)} duration={log.duration} />
             )}
 
             {/* ── Text / caption ── */}

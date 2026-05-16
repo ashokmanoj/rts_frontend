@@ -3,7 +3,7 @@ import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, Z
 
 import { useEscapeKey } from "../../hooks/useEscapeKey";
 import { getNowTime, getNowDate, getNowDateTime } from "../../utils/dateTime";
-import { sanitizeUrl } from "../../utils/security";
+import { resolveFileUrl } from "../../utils/security";
 import StatusBadge            from "../table/StatusBadge";
 import ChatPanel              from "../chat/ChatPanel";
 import SpreadsheetPreviewModal from "./SpreadsheetPreviewModal";
@@ -319,7 +319,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                             const imageNames  = (req.fileUrls || []).map((u, i) => req.fileNames?.[i] || `Image ${i + 1}`).filter((_, i) => isImageUrl((req.fileUrls || [])[i]));
                             setLightboxData({ urls: imageUrls, names: imageNames, index: imageUrls.indexOf(url) });
                           }}>
-                            <img src={sanitizeUrl(url)} alt={req.fileNames?.[idx] || "attachment"} className="h-24 w-24 object-cover rounded-xl shadow-md border-2 border-white group-hover:brightness-90 transition-all"/>
+                            <img src={resolveFileUrl(url)} alt={req.fileNames?.[idx] || "attachment"} className="h-24 w-24 object-cover rounded-xl shadow-md border-2 border-white group-hover:brightness-90 transition-all"/>
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"><div className="bg-black/50 rounded-full p-1"><ZoomIn size={16} className="text-white"/></div></div>
                           </div>
                         ) : isSpreadsheetUrl(url) ? (
@@ -333,7 +333,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                             <Eye size={11} className="text-teal-400 flex-shrink-0" />
                           </button>
                         ) : (
-                          <a key={idx} href={sanitizeUrl(url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-bold text-[12px] underline">
+                          <a key={idx} href={resolveFileUrl(url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-bold text-[12px] underline">
                             📎 {req.fileNames?.[idx] || "View attachment"}
                           </a>
                         )
@@ -483,7 +483,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                    {req.closeData.fileUrl && (
                       <div className="pt-2">
                          {isImageUrl(req.closeData.fileUrl) ? (
-                            <img src={sanitizeUrl(req.closeData.fileUrl)} onClick={() => setLightboxData({ urls: [req.closeData.fileUrl], names: [req.closeData.fileName || "closure-attachment"], index: 0 })} className="h-20 w-auto rounded-lg border-2 border-white shadow-sm cursor-pointer hover:brightness-95 transition-all"/>
+                            <img src={resolveFileUrl(req.closeData.fileUrl)} onClick={() => setLightboxData({ urls: [req.closeData.fileUrl], names: [req.closeData.fileName || "closure-attachment"], index: 0 })} className="h-20 w-auto rounded-lg border-2 border-white shadow-sm cursor-pointer hover:brightness-95 transition-all"/>
                          ) : isSpreadsheetUrl(req.closeData.fileUrl) ? (
                             <button
                               onClick={() => setSpreadsheetPreview({ url: req.closeData.fileUrl, fileName: req.closeData.fileName || "closure-attachment" })}
@@ -492,7 +492,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                               <FileSpreadsheet size={12} className="text-teal-600" /> View Spreadsheet <Eye size={10} className="text-teal-400" />
                             </button>
                          ) : (
-                            <a href={sanitizeUrl(req.closeData.fileUrl)} target="_blank" rel="noreferrer" className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 underline">📎 View Closure Attachment</a>
+                            <a href={resolveFileUrl(req.closeData.fileUrl)} target="_blank" rel="noreferrer" className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 underline">📎 View Closure Attachment</a>
                          )}
                       </div>
                    )}

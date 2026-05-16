@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Download, FileSpreadsheet, AlertTriangle } from "lucide-react";
 import * as XLSX from "xlsx";
-import { sanitizeUrl } from "../../utils/security";
+import { resolveFileUrl } from "../../utils/security";
 
 const MAX_ROWS = 500;
 
@@ -29,7 +29,7 @@ export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(sanitizeUrl(url));
+        const res = await fetch(resolveFileUrl(url));
         if (!res.ok) throw new Error("Network error");
         const buf = await res.arrayBuffer();
         const wb  = XLSX.read(buf, { type: "array" });
@@ -50,14 +50,6 @@ export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
     if (wbRef.current) parseSheet(wbRef.current, idx);
   };
 
-  const handleDownload = (e) => {
-    e.stopPropagation();
-    if (!wbRef.current) return;
-    const name = fileName || "spreadsheet.xlsx";
-    const ext  = name.split(".").pop().toLowerCase();
-    // Always export as xlsx for Excel compatibility; keep csv if original was csv
-    XLSX.writeFile(wbRef.current, ext === "csv" ? name : name.replace(/\.[^.]+$/, ".xlsx"));
-  };
 
   return (
     <div
@@ -82,13 +74,14 @@ export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
               </p>
             )}
           </div>
-          <button
-            onClick={handleDownload}
-            disabled={loading || !!error || !wbRef.current}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm"
+          <a
+            href={resolveFileUrl(url)}
+            download={fileName}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm"
           >
             <Download size={13} /> Download
-          </button>
+          </a>
           <button
             onClick={onClose}
             className="p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"

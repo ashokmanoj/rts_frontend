@@ -424,7 +424,7 @@ export default function FoodPage({ currentUser }) {
             {/* Cancellation window notice */}
             {status?.subscribed && (
               <p className="text-[15px] text-slate-700 font-medium">
-                All changes can be made or undone before <span className="font-black text-slate-500">Saturday 6:30 PM</span> of the current week.
+                Any changes for next week can be made only before <span className="font-black text-slate-500">Saturday 6:30 PM</span> of the current week.
               </p>
             )}
 
