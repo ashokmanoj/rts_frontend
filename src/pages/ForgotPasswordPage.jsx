@@ -1,23 +1,30 @@
 import { useState } from "react";
 import { Link }     from "react-router-dom";
 import { forgotPassword } from "../services/authService";
-import { ArrowLeft, Mail, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Mail, CheckCircle2, Clock, ShieldAlert } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email,     setEmail]     = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error,     setError]     = useState("");
+  const [email,        setEmail]        = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [submitted,    setSubmitted]    = useState(false);
+  const [error,        setError]        = useState("");
+  const [isRateLimited, setIsRateLimited] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsRateLimited(false);
     setLoading(true);
     try {
       await forgotPassword(email.trim().toLowerCase());
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong. Please try again.");
+      if (err.response?.status === 429) {
+        setIsRateLimited(true);
+        setError(err.response?.data?.error || "Too many attempts. Please try again later.");
+      } else {
+        setError(err.response?.data?.error || "Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -73,12 +80,28 @@ export default function ForgotPasswordPage() {
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                   />
                   {error && (
-                    <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-3 rounded-xl">{error}</p>
+                    isRateLimited ? (
+                      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <ShieldAlert size={16} className="text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="font-black text-amber-800 text-sm">Too Many Attempts</p>
+                          <p className="text-amber-700 text-xs mt-1 leading-relaxed">{error}</p>
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <Clock size={11} className="text-amber-500" />
+                            <span className="text-[11px] text-amber-600 font-semibold">Please wait before trying again</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-3 rounded-xl">{error}</p>
+                    )
                   )}
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95"
+                    disabled={loading || isRateLimited}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95"
                   >
                     {loading ? "Sending..." : "Send Reset Link"}
                   </button>

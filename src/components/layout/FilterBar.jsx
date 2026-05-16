@@ -80,6 +80,7 @@ export default function FilterBar({
       priority:       "",
       startDate:      null,
       endDate:        null,
+      search:         "",
     });
   };
 

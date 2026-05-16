@@ -1,9 +1,11 @@
 import { useState } from "react";
 import {
   Paperclip, FileText, FileSpreadsheet, FileImage,
-  Film, Music, Archive, File, ZoomIn, X, Download,
+  Film, Music, Archive, File, ZoomIn, Eye, Reply,
 } from "lucide-react";
-import VoiceMessageBubble from "./VoiceMessageBubble";
+import VoiceMessageBubble      from "./VoiceMessageBubble";
+import SpreadsheetPreviewModal from "../modals/SpreadsheetPreviewModal";
+import GalleryLightbox         from "../modals/GalleryLightbox";
 import { getAvatarClass, getInitials } from "../../utils/roleStyles";
 import { sanitizeUrl } from "../../utils/security";
 
@@ -26,74 +28,44 @@ function getFileIcon(fileName = "") {
   return   { Icon: File,           color: "text-slate-500",  bg: "bg-slate-50"  };
 }
 
-// ── Lightbox ──────────────────────────────────────────────────────
-function Lightbox({ src, fileName, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex flex-col items-center gap-3 max-w-5xl w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top bar */}
-        <div className="flex items-center justify-between w-full px-1">
-          <span className="text-white text-sm font-bold truncate max-w-[80%]">
-            {fileName || "Image"}
-          </span>
-          <div className="flex items-center gap-2">
-            <a
-              href={sanitizeUrl(src)}
-              download={fileName}
-              onClick={(e) => e.stopPropagation()}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-              title="Download"
-            >
-              <Download size={16} />
-            </a>
-            <button
-              onClick={onClose}
-              className="p-2 bg-white/10 hover:bg-red-500 rounded-full text-white transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Full image */}
-        <img
-          src={sanitizeUrl(src)}
-          alt={fileName}
-          className="max-h-[82vh] max-w-full rounded-xl object-contain shadow-2xl"
-        />
-        <p className="text-white/40 text-[11px]">Click outside or press ESC to close</p>
-      </div>
-    </div>
-  );
-}
-
 // ── MessageBubble ─────────────────────────────────────────────────
-export default function MessageBubble({ log }) {
-  const [lightbox, setLightbox] = useState(false);
+const isSpreadsheetFile = (name = "") => /\.(csv|xlsx|xls)$/i.test(name);
+
+export default function MessageBubble({ log, onReply }) {
+  const [lightbox,        setLightbox]        = useState(false);
+  const [spreadsheetOpen, setSpreadsheetOpen] = useState(false);
+  const [hovered,         setHovered]         = useState(false);
 
   const hasFile  = log.type === "file"  || log.type === "mixed";
   const hasVoice = log.type === "voice" || log.type === "mixed";
   const hasText  = !!log.text;
 
   const { Icon, color, bg } = hasFile ? getFileIcon(log.fileName || "") : {};
+  const isSpreadsheet = hasFile && !log.isImage && isSpreadsheetFile(log.fileName);
+
+  // Build a short label for the replied-to message
+  const replyPreviewText = log.replyTo?.text
+    ? log.replyTo.text.slice(0, 60) + (log.replyTo.text.length > 60 ? "…" : "")
+    : log.replyTo?.fileName
+    ? `📎 ${log.replyTo.fileName}`
+    : log.replyTo?.isVoice
+    ? "🎤 Voice message"
+    : "";
 
   return (
     <>
       {lightbox && (
-        <Lightbox
-          src={log.fileUrl}
-          fileName={log.fileName}
-          onClose={() => setLightbox(false)}
-        />
+        <GalleryLightbox urls={[log.fileUrl]} fileNames={[log.fileName || "Image"]} startIndex={0} onClose={() => setLightbox(false)} />
+      )}
+      {spreadsheetOpen && (
+        <SpreadsheetPreviewModal url={log.fileUrl} fileName={log.fileName} onClose={() => setSpreadsheetOpen(false)} />
       )}
 
-      <div className="flex gap-2 items-start">
+      <div
+        className="flex gap-2 items-start group"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
         {/* Avatar */}
         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5 ${getAvatarClass(log.role)}`}>
           {getInitials(log.author)}
@@ -114,6 +86,17 @@ export default function MessageBubble({ log }) {
             </span>
             <span className="text-[9px] text-slate-400 ml-auto">{log.date} · {log.time}</span>
           </div>
+
+          {/* Replied-to quote */}
+          {log.replyTo && (
+            <div className="flex items-stretch gap-1.5 mb-1.5 max-w-[280px]">
+              <div className="w-0.5 rounded-full bg-indigo-400 flex-shrink-0" />
+              <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1 min-w-0">
+                <p className="text-[9px] font-black text-indigo-600 truncate">{log.replyTo.author}</p>
+                <p className="text-[10px] text-slate-500 truncate leading-tight">{replyPreviewText}</p>
+              </div>
+            </div>
+          )}
 
           {/* Bubble content */}
           <div className="flex flex-col gap-1.5 bg-white border border-slate-100 rounded-2xl px-3 py-2.5 shadow-sm w-fit max-w-full">
@@ -138,8 +121,20 @@ export default function MessageBubble({ log }) {
               </div>
             )}
 
-            {/* ── Non-image file — download link ── */}
-            {hasFile && !log.isImage && (
+            {/* ── Spreadsheet file — preview button ── */}
+            {hasFile && !log.isImage && isSpreadsheet && (
+              <button
+                onClick={() => setSpreadsheetOpen(true)}
+                className="flex items-center gap-2 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl px-3 py-2 text-[11px] font-bold transition-all active:scale-95"
+              >
+                <FileSpreadsheet size={14} className="text-teal-600 flex-shrink-0" />
+                <span className="truncate text-slate-700 max-w-[160px]">{log.fileName}</span>
+                <Eye size={11} className="text-teal-400 flex-shrink-0" />
+              </button>
+            )}
+
+            {/* ── Non-image, non-spreadsheet file — download link ── */}
+            {hasFile && !log.isImage && !isSpreadsheet && (
               <a
                 href={sanitizeUrl(log.fileUrl)}
                 download={log.fileName}
@@ -162,6 +157,21 @@ export default function MessageBubble({ log }) {
             )}
           </div>
         </div>
+
+        {/* Reply button — appears inline on hover, after the bubble */}
+        {onReply && (
+          <button
+            onClick={() => onReply(log)}
+            title="Reply"
+            className={`flex-shrink-0 self-center ml-1 p-1.5 rounded-full border transition-all active:scale-90 ${
+              hovered
+                ? "opacity-100 bg-white border-slate-200 text-slate-400 hover:text-indigo-500 hover:border-indigo-300 shadow-sm"
+                : "opacity-0 pointer-events-none border-transparent"
+            }`}
+          >
+            <Reply size={13}/>
+          </button>
+        )}
       </div>
     </>
   );

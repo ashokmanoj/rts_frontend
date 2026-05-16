@@ -13,7 +13,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { MessageSquare, Lock } from "lucide-react";
 import ApprovalCard      from "./ApprovalCard";
 import MessageBubble     from "./MessageBubble";
@@ -23,41 +23,101 @@ import { getNowTime, getNowDate } from "../../utils/dateTime";
 
 export default function ChatPanel({ reqId, logs, currentUser, onSendMessage, isClosed, canChat }) {
   const chatEndRef = useRef(null);
+  const [replyTo, setReplyTo] = useState(null);
 
   // Auto-scroll to newest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  const handleSend = ({ text, file, voiceBlob, voiceDuration }) => {
+  const handleReply = (log) => {
+    setReplyTo({
+      author:   log.author,
+      text:     log.text    || null,
+      fileName: log.fileName || null,
+      isImage:  log.isImage  || false,
+      fileUrl:  log.fileUrl  || null,
+      isVoice:  log.type === "voice",
+    });
+  };
+
+  const handleSend = ({ text, files, voiceBlob, voiceDuration }) => {
     const time = getNowTime();
     const date = getNowDate();
 
-    if (!file && !voiceBlob && !text.trim()) return;
+    const trimmedText = text.trim();
+    const hasFiles    = files && files.length > 0;
 
-    // Determine message type from what was staged
-    const type = file && voiceBlob ? "mixed"
-               : file              ? "file"
-               : voiceBlob         ? "voice"
-               : "message";
+    if (!hasFiles && !voiceBlob && !trimmedText) return;
 
-    onSendMessage(reqId, {
-      id:        Date.now(),
-      author:    currentUser.name,
-      role:      currentUser.role,
-      time,
-      date,
-      type,
-      text:      text.trim(),
-      // Blob URLs for immediate local display (before server response arrives)
-      fileBlob:  file      || null,
-      fileUrl:   file      ? URL.createObjectURL(file)      : null,
-      fileName:  file      ? file.name                      : null,
-      isImage:   file      ? file.type.startsWith("image/") : null,
-      voiceBlob: voiceBlob || null,
-      voiceUrl:  voiceBlob ? URL.createObjectURL(voiceBlob) : null,
-      duration:  voiceDuration || null,
-    });
+    if (hasFiles) {
+      // Send each file as its own message; attach caption + replyTo to the first one only
+      files.forEach((file, i) => {
+        const isVoice = false;
+        const type    = voiceBlob && i === files.length - 1 ? "mixed" : "file";
+        onSendMessage(reqId, {
+          id:       Date.now() + i,
+          author:   currentUser.name,
+          role:     currentUser.role,
+          time,
+          date,
+          type,
+          text:     i === 0 ? trimmedText : "",
+          replyTo:  i === 0 ? (replyTo || null) : null,
+          fileBlob: file,
+          fileUrl:  URL.createObjectURL(file),
+          fileName: file.name,
+          isImage:  file.type.startsWith("image/"),
+          voiceBlob: null,
+          voiceUrl:  null,
+          duration:  null,
+        });
+      });
+
+      // If there's also a voice clip, send it as a final separate message
+      if (voiceBlob) {
+        onSendMessage(reqId, {
+          id:        Date.now() + files.length,
+          author:    currentUser.name,
+          role:      currentUser.role,
+          time,
+          date,
+          type:      "voice",
+          text:      "",
+          replyTo:   null,
+          fileBlob:  null,
+          fileUrl:   null,
+          fileName:  null,
+          isImage:   null,
+          voiceBlob,
+          voiceUrl:  URL.createObjectURL(voiceBlob),
+          duration:  voiceDuration,
+        });
+      }
+
+      // If only text with no files (shouldn't happen here but guard)
+    } else {
+      const type = voiceBlob ? "voice" : "message";
+      onSendMessage(reqId, {
+        id:        Date.now(),
+        author:    currentUser.name,
+        role:      currentUser.role,
+        time,
+        date,
+        type,
+        text:      trimmedText,
+        replyTo:   replyTo || null,
+        fileBlob:  null,
+        fileUrl:   null,
+        fileName:  null,
+        isImage:   null,
+        voiceBlob: voiceBlob || null,
+        voiceUrl:  voiceBlob ? URL.createObjectURL(voiceBlob) : null,
+        duration:  voiceDuration || null,
+      });
+    }
+
+    setReplyTo(null);
   };
 
   return (
@@ -86,7 +146,7 @@ export default function ChatPanel({ reqId, logs, currentUser, onSendMessage, isC
         {logs.map((log) =>
           log.type === "approval" ? <ApprovalCard  key={log.id} log={log} /> :
           log.type === "system"   ? <SystemMessage key={log.id} log={log} /> :
-                                    <MessageBubble key={log.id} log={log} />
+                                    <MessageBubble key={log.id} log={log} onReply={canChat ? handleReply : null} />
         )}
         <div ref={chatEndRef} />
       </div>
@@ -94,7 +154,7 @@ export default function ChatPanel({ reqId, logs, currentUser, onSendMessage, isC
       {/* Input bar / closed notice */}
       <div className="flex-shrink-0">
         {canChat ? (
-          <ChatInputBar onSend={handleSend} />
+          <ChatInputBar onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
         ) : isClosed ? (
           <div className="flex items-center justify-center gap-2 bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3 text-red-500">
             <Lock size={14} />

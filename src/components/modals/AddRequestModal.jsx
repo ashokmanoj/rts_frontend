@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   X, Upload, ChevronDown, ChevronLeft, ChevronRight,
   FileText, FileSpreadsheet, FileImage,
-  Film, Music, Archive, File, Calendar, AlertTriangle,
+  Film, Music, Archive, File, Calendar, AlertTriangle, Clipboard,
 } from "lucide-react";
 import { useEscapeKey } from "../../hooks/useEscapeKey";
 
@@ -15,13 +15,16 @@ const DEPARTMENTS = [
 ];
 
 function getFileInfo(file) {
-  const t = file.type;
+  const t    = file.type;
+  const name = (file.name || "").toLowerCase();
   if (t.startsWith("image/"))  return { kind:"image",   label:"Image",       color:"bg-purple-100", iconColor:"text-purple-500" };
   if (t.startsWith("video/"))  return { kind:"video",   label:"Video",       color:"bg-pink-100",   iconColor:"text-pink-500"   };
   if (t.startsWith("audio/"))  return { kind:"audio",   label:"Audio",       color:"bg-yellow-100", iconColor:"text-yellow-500" };
   if (t === "application/pdf") return { kind:"pdf",     label:"PDF",         color:"bg-red-100",    iconColor:"text-red-500"    };
   if (t.includes("word"))      return { kind:"word",    label:"Word Doc",    color:"bg-blue-100",   iconColor:"text-blue-600"   };
-  if (t.includes("excel") || t.includes("spreadsheet"))
+  if (t === "text/csv" || name.endsWith(".csv"))
+    return { kind:"csv", label:"CSV File", color:"bg-teal-100", iconColor:"text-teal-600" };
+  if (t.includes("excel") || t.includes("spreadsheet") || name.endsWith(".xlsx") || name.endsWith(".xls"))
     return { kind:"excel", label:"Spreadsheet", color:"bg-green-100",  iconColor:"text-green-600"  };
   if (t.includes("zip")||t.includes("rar")||t.includes("tar")||t.includes("7z"))
     return { kind:"archive", label:"Archive",   color:"bg-orange-100", iconColor:"text-orange-500" };
@@ -30,13 +33,14 @@ function getFileInfo(file) {
 
 function FileKindIcon({ kind, iconColor, size = 28 }) {
   const cls = iconColor;
-  if (kind === "image")   return <FileImage      size={size} className={cls} />;
-  if (kind === "video")   return <Film           size={size} className={cls} />;
-  if (kind === "audio")   return <Music          size={size} className={cls} />;
-  if (kind === "pdf")     return <FileText       size={size} className={cls} />;
-  if (kind === "word")    return <FileText       size={size} className={cls} />;
+  if (kind === "image")   return <FileImage       size={size} className={cls} />;
+  if (kind === "video")   return <Film            size={size} className={cls} />;
+  if (kind === "audio")   return <Music           size={size} className={cls} />;
+  if (kind === "pdf")     return <FileText        size={size} className={cls} />;
+  if (kind === "word")    return <FileText        size={size} className={cls} />;
+  if (kind === "csv")     return <FileSpreadsheet size={size} className={cls} />;
   if (kind === "excel")   return <FileSpreadsheet size={size} className={cls} />;
-  if (kind === "archive") return <Archive        size={size} className={cls} />;
+  if (kind === "archive") return <Archive         size={size} className={cls} />;
   return <File size={size} className={cls} />;
 }
 
@@ -210,17 +214,60 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
   const [selectedDept, setSelectedDept] = useState("");
   const [dueDate,      setDueDate]      = useState("");
 
-  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef   = useRef(null);
+  const dragCounterRef = useRef(0);
 
   useEscapeKey(onClose);
 
-  const handleFileChange = (e) => {
-    const newFiles = Array.from(e.target.files);
+  const addFiles = useCallback((newFiles) => {
     if (!newFiles.length) return;
     setUploadedFiles(prev => [...prev, ...newFiles]);
-    setImagePreviews(prev => [...prev, ...newFiles.map(f => f.type.startsWith("image/") ? URL.createObjectURL(f) : null)]);
+    setImagePreviews(prev => [
+      ...prev,
+      ...newFiles.map(f => f.type.startsWith("image/") ? URL.createObjectURL(f) : null),
+    ]);
+  }, []);
+
+  const handleFileChange = (e) => {
+    addFiles(Array.from(e.target.files));
     e.target.value = "";
   };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => { e.preventDefault(); };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    addFiles(Array.from(e.dataTransfer.files));
+  };
+
+  // Ctrl+V paste — captures files and screenshots from clipboard
+  const handlePaste = useCallback((e) => {
+    const files = Array.from(e.clipboardData?.items || [])
+      .filter(item => item.kind === "file")
+      .map(item => item.getAsFile())
+      .filter(Boolean);
+    if (files.length) addFiles(files);
+  }, [addFiles]);
+
+  useEffect(() => {
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [handlePaste]);
 
   const handleRemoveFile = (idx) => {
     const preview = imagePreviews[idx];
@@ -326,11 +373,40 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
           />
 
           {/* Upload zone */}
-          <div className="relative border-4 border-dashed border-slate-100 min-h-[150px] flex flex-col items-center justify-center rounded-3xl bg-slate-50 hover:bg-blue-50/40 transition-colors group overflow-hidden p-4">
+          <div
+            className={`relative border-4 border-dashed min-h-[150px] flex flex-col items-center justify-center rounded-3xl transition-all duration-200 overflow-hidden p-4
+              ${isDragging
+                ? "border-indigo-400 bg-indigo-50 scale-[1.01]"
+                : "border-slate-100 bg-slate-50 hover:bg-blue-50/40 hover:border-slate-200 group"
+              }`}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {/* Drag-over overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-indigo-50/90 z-10 pointer-events-none rounded-2xl">
+                <Upload size={36} className="text-indigo-500 mb-2 animate-bounce" />
+                <p className="text-indigo-600 font-black text-sm">Drop files here</p>
+              </div>
+            )}
+
             {uploadedFiles.length === 0 ? (
               <>
-                <Upload className="text-slate-300 mb-2 group-hover:text-blue-400 transition-colors" size={30} />
-                <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Upload images or files (optional)</span>
+                <Upload className={`mb-2 transition-colors ${isDragging ? "text-indigo-400" : "text-slate-300 group-hover:text-blue-400"}`} size={30} />
+                <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px] text-center">
+                  Upload images, files or CSV
+                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[9px] text-slate-300 font-medium">Drag & drop</span>
+                  <span className="text-slate-200 text-[9px]">·</span>
+                  <span className="text-[9px] text-slate-300 font-medium flex items-center gap-1">
+                    <Clipboard size={9} /> Paste (Ctrl+V)
+                  </span>
+                  <span className="text-slate-200 text-[9px]">·</span>
+                  <span className="text-[9px] text-slate-300 font-medium">Browse</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -343,10 +419,10 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
               <div className="w-full space-y-3">
                 <div className="flex flex-wrap gap-3 justify-center">
                   {uploadedFiles.map((f, idx) => {
-                    const info = getFileInfo(f);
+                    const info    = getFileInfo(f);
                     const preview = imagePreviews[idx];
                     return (
-                      <div key={idx} className="relative group/item flex-shrink-0 flex flex-col items-center">
+                      <div key={idx} className="relative flex-shrink-0 flex flex-col items-center">
                         <div className={`w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center ${info.color} border-2 border-white shadow-sm`}>
                           {info.kind === "image" && preview
                             ? <img src={preview} alt={f.name} className="w-full h-full object-cover" />
@@ -366,8 +442,10 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser }) {
                     );
                   })}
                 </div>
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center justify-center gap-4 flex-wrap">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[11px] text-indigo-600 font-bold hover:underline">+ Add more</button>
+                  <span className="text-slate-300 text-xs">|</span>
+                  <span className="text-[10px] text-slate-300 flex items-center gap-1"><Clipboard size={9} /> Ctrl+V to paste</span>
                   <span className="text-slate-300 text-xs">|</span>
                   <button type="button" onClick={handleRemoveAll} className="text-[11px] text-red-500 font-bold hover:underline">Remove all</button>
                 </div>

@@ -1,29 +1,15 @@
-import { useState } from "react";
-import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, ZoomIn, Download, Bell, Send, ShieldCheck, Calendar, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, ZoomIn, Bell, Send, ShieldCheck, Calendar, AlertTriangle, ThumbsUp, ThumbsDown, FileSpreadsheet, Eye } from "lucide-react";
+
 import { useEscapeKey } from "../../hooks/useEscapeKey";
 import { getNowTime, getNowDate, getNowDateTime } from "../../utils/dateTime";
 import { sanitizeUrl } from "../../utils/security";
-import StatusBadge from "../table/StatusBadge";
-import ChatPanel   from "../chat/ChatPanel";
+import StatusBadge            from "../table/StatusBadge";
+import ChatPanel              from "../chat/ChatPanel";
+import SpreadsheetPreviewModal from "./SpreadsheetPreviewModal";
+import GalleryLightbox         from "./GalleryLightbox";
 
 const DEPARTMENTS = ["Academic","Accounts","Admin","Animation","Broadcasting","Business Development","Corporate Communications","Documentation","Food Committee","Game Development","Govt. Relations","HR","Management","Marketing","Operation","Purchase","RTS Help Desk","Software","Store","System admin","TA Committee","Technical Support"];
-
-function ImageLightbox({ src, fileName, onClose }) {
-  return (
-    <div className="fixed inset-0 bg-black/90 z-[200] flex flex-col items-center justify-center" onClick={onClose}>
-      <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between w-full px-2">
-          <span className="text-white text-sm font-bold truncate max-w-[80%]">{fileName || "Image"}</span>
-          <div className="flex items-center gap-2">
-            <a href={sanitizeUrl(src)} download={fileName} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><Download size={16}/></a>
-            <button onClick={onClose} className="p-2 bg-white/10 hover:bg-red-500 rounded-full text-white"><X size={16}/></button>
-          </div>
-        </div>
-        <img src={sanitizeUrl(src)} alt={fileName} className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl"/>
-      </div>
-    </div>
-  );
-}
 
 function ApprovalProgress({ rmStatus, hodStatus, deptHodStatus, isClosed }) {
   const steps = [
@@ -76,13 +62,13 @@ function ApprovalProgress({ rmStatus, hodStatus, deptHodStatus, isClosed }) {
 export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSendMessage, onApproval, onOpenCloseTicket, onAcknowledge }) {
   const [selectedDept,      setSelectedDept]      = useState(req?.assignedDept || "");
   const [approvalComment,   setApprovalComment]   = useState("");
-  const [lightboxSrc,       setLightboxSrc]       = useState(null);
+  const [lightboxData,      setLightboxData]      = useState(null); // { urls, names, index }
   const [showCheckingModal, setShowCheckingModal] = useState(false);
   const [checkingDate,      setCheckingDate]      = useState("");
   const [checkingReason,    setCheckingReason]    = useState("");
   const [ackLoading,        setAckLoading]        = useState(false);
 
-  useEscapeKey(lightboxSrc ? () => setLightboxSrc(null) : onClose);
+  useEscapeKey(lightboxData ? () => setLightboxData(null) : onClose);
 
   const logs        = chatLogs[req?.id] || [];
   const deptChanged = selectedDept !== req?.assignedDept;
@@ -110,7 +96,10 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   // Team members can click "Checking" on incoming requests from other departments
   const canUserCheck = isTeamMemberIncoming && !isClosed && !isAdmin && !canApprove;
 
-  const isImageUrl = (url) => url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
+  const isImageUrl       = (url) => url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
+  const isSpreadsheetUrl = (url) => url && /\.(csv|xlsx|xls)(\?.*)?$/i.test(url);
+
+  const [spreadsheetPreview, setSpreadsheetPreview] = useState(null); // { url, fileName }
 
   const handleApproval = (decision, checkingDeadline = null, checkingReasonVal = null) => {
     const dateTime = getNowDateTime();
@@ -154,7 +143,8 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
 
   return (
     <>
-      {lightboxSrc && <ImageLightbox src={lightboxSrc} fileName={req?.fileNames?.[req?.fileUrls?.indexOf(lightboxSrc)] ?? req?.fileName} onClose={() => setLightboxSrc(null)} />}
+      {lightboxData && <GalleryLightbox urls={lightboxData.urls} fileNames={lightboxData.names} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} />}
+      {spreadsheetPreview && <SpreadsheetPreviewModal url={spreadsheetPreview.url} fileName={spreadsheetPreview.fileName} onClose={() => setSpreadsheetPreview(null)} />}
 
       {/* Checking deadline popup */}
       {showCheckingModal && (
@@ -324,10 +314,24 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                     <div className="flex flex-wrap gap-3 justify-center">
                       {req.fileUrls.map((url, idx) => (
                         isImageUrl(url) ? (
-                          <div key={idx} className="relative group cursor-pointer" onClick={() => setLightboxSrc(url)}>
+                          <div key={idx} className="relative group cursor-pointer" onClick={() => {
+                            const imageUrls   = (req.fileUrls || []).filter(isImageUrl);
+                            const imageNames  = (req.fileUrls || []).map((u, i) => req.fileNames?.[i] || `Image ${i + 1}`).filter((_, i) => isImageUrl((req.fileUrls || [])[i]));
+                            setLightboxData({ urls: imageUrls, names: imageNames, index: imageUrls.indexOf(url) });
+                          }}>
                             <img src={sanitizeUrl(url)} alt={req.fileNames?.[idx] || "attachment"} className="h-24 w-24 object-cover rounded-xl shadow-md border-2 border-white group-hover:brightness-90 transition-all"/>
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"><div className="bg-black/50 rounded-full p-1"><ZoomIn size={16} className="text-white"/></div></div>
                           </div>
+                        ) : isSpreadsheetUrl(url) ? (
+                          <button
+                            key={idx}
+                            onClick={() => setSpreadsheetPreview({ url, fileName: req.fileNames?.[idx] || "attachment" })}
+                            className="flex items-center gap-2 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold text-[11px] px-3 py-2 rounded-xl transition-all active:scale-95"
+                          >
+                            <FileSpreadsheet size={14} className="text-teal-600 flex-shrink-0" />
+                            <span className="truncate max-w-[160px]">{req.fileNames?.[idx] || "View spreadsheet"}</span>
+                            <Eye size={11} className="text-teal-400 flex-shrink-0" />
+                          </button>
                         ) : (
                           <a key={idx} href={sanitizeUrl(url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-bold text-[12px] underline">
                             📎 {req.fileNames?.[idx] || "View attachment"}
@@ -479,7 +483,14 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                    {req.closeData.fileUrl && (
                       <div className="pt-2">
                          {isImageUrl(req.closeData.fileUrl) ? (
-                            <img src={sanitizeUrl(req.closeData.fileUrl)} onClick={() => setLightboxSrc(req.closeData.fileUrl)} className="h-20 w-auto rounded-lg border-2 border-white shadow-sm cursor-pointer hover:brightness-95 transition-all"/>
+                            <img src={sanitizeUrl(req.closeData.fileUrl)} onClick={() => setLightboxData({ urls: [req.closeData.fileUrl], names: [req.closeData.fileName || "closure-attachment"], index: 0 })} className="h-20 w-auto rounded-lg border-2 border-white shadow-sm cursor-pointer hover:brightness-95 transition-all"/>
+                         ) : isSpreadsheetUrl(req.closeData.fileUrl) ? (
+                            <button
+                              onClick={() => setSpreadsheetPreview({ url: req.closeData.fileUrl, fileName: req.closeData.fileName || "closure-attachment" })}
+                              className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all"
+                            >
+                              <FileSpreadsheet size={12} className="text-teal-600" /> View Spreadsheet <Eye size={10} className="text-teal-400" />
+                            </button>
                          ) : (
                             <a href={sanitizeUrl(req.closeData.fileUrl)} target="_blank" rel="noreferrer" className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 underline">📎 View Closure Attachment</a>
                          )}

@@ -142,12 +142,10 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   };
 
   const handleSearchChange = (val) => {
-    // Local state update is fast, but we debounce the actual filter application
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    
-    // We update the "search" key in filters after 300ms
     debounceTimerRef.current = setTimeout(() => {
-      handleFilterChange({ ...filters, search: val });
+      setCurrentPage(1);
+      setFilters(prev => ({ ...prev, search: val }));
     }, 300);
   };
 
@@ -170,9 +168,9 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
     setChatLogs((prev) => ({ ...prev, [reqId]: [...(prev[reqId] || []), message] }));
     try {
       let saved;
-      if      (message.type === "message")                      saved = await sendText(reqId, message.text);
-      else if (message.type === "voice")                        saved = await sendVoice(reqId, message.voiceBlob, message.duration);
-      else if (message.type === "file" || message.type === "mixed") saved = await sendFile(reqId, message.fileBlob, message.text);
+      if      (message.type === "message")                          saved = await sendText(reqId, message.text, message.replyTo);
+      else if (message.type === "voice")                            saved = await sendVoice(reqId, message.voiceBlob, message.duration, message.replyTo);
+      else if (message.type === "file" || message.type === "mixed") saved = await sendFile(reqId, message.fileBlob, message.text, message.replyTo);
       
       if (saved) {
         setChatLogs((prev) => ({ ...prev, [reqId]: (prev[reqId] || []).map((m) => (m === message ? saved : m)) }));
