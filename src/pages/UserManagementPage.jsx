@@ -71,7 +71,7 @@ const DESIGNATIONS = [
   "Team Lead", "Team Lead - FLN", "Team Lead - Kokrajhar", "Team Lead - Silchar",
   "Team Lead-Operations", "Technical Executive", "Technical Material Management",
   "Technical Support Executive", "Technology Management Executive", "TL-Technical Support",
-  "Trainee", "VFX Artist", "Vice President", "Video Editor"
+  "Trainee", "VFX Artist", "Vice President", "Video Editor", "MIS Executive"
 ];
 
 function EmpIdPicker({ value, onChange, users, placeholder = "Search by ID or name…" }) {
