@@ -4,7 +4,7 @@ import {
   Search, Plus, LogOut, BookOpen, X, Calendar,
   BarChart3, User, Users, Shield, Building2, Briefcase, Settings,
   Heart, UtensilsCrossed, CheckCircle2, RefreshCw, Bell, BellOff,
-  SlidersHorizontal, ChevronRight, ChevronLeft, MapPin,
+  SlidersHorizontal, ChevronRight, ChevronLeft, MapPin, Clock,
 } from "lucide-react";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { fetchRoleCounts } from "../../services/requestService";
@@ -41,6 +41,12 @@ export default function FilterBar({
   const [showProfile,    setShowProfile]    = useState(false);
   const [showFilters,    setShowFilters]    = useState(false);
   const [localSearch,    setLocalSearch]    = useState(searchTerm);
+  const RECENT_KEY = `rts_recent_searches_${currentUser?.empId || "guest"}`;
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
+  });
+  const [showRecent, setShowRecent] = useState(false);
+  const searchWrapRef = useRef(null);
   const [switchingTo,    setSwitchingTo]    = useState(null);
   const [switchCategory, setSwitchCategory] = useState(null);
   const [roleCounts,     setRoleCounts]     = useState({});
@@ -68,10 +74,37 @@ export default function FilterBar({
 
   const updateFilter = (key, value) => onFilterChange({ ...activeFilters, [key]: value });
 
+  const saveRecentSearch = (term) => {
+    const t = term.trim();
+    if (!t) return;
+    setRecentSearches(prev => {
+      const next = [t, ...prev.filter(s => s !== t)].slice(0, 5);
+      try { sessionStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
   const handleLocalSearchChange = (val) => {
     setLocalSearch(val);
     onSearchChange(val);
   };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter" && localSearch.trim()) {
+      saveRecentSearch(localSearch);
+      setShowRecent(false);
+    }
+    if (e.key === "Escape") setShowRecent(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setShowRecent(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const resetFilters = () => {
     setLocalSearch("");
@@ -286,15 +319,43 @@ export default function FilterBar({
 
           {/* Search */}
           {!isInternsDept && !isFoodTab && (
-            <div className="relative flex-1 sm:flex-none">
+            <div className="relative flex-1 sm:flex-none" ref={searchWrapRef}>
               <input
                 type="search"
                 value={localSearch}
                 onChange={e => handleLocalSearchChange(e.target.value)}
+                onFocus={() => setShowRecent(true)}
+                onKeyDown={handleSearchKeyDown}
+                onBlur={() => { if (localSearch.trim()) saveRecentSearch(localSearch); }}
                 className="pl-3 pr-9 py-2 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-xl text-[12px] w-full sm:w-48 font-medium shadow-inner"
                 placeholder="Search ticket #, name…"
               />
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+
+              {/* Recent searches dropdown */}
+              {showRecent && recentSearches.length > 0 && (
+                <div className="absolute top-full left-0 mt-1 w-full sm:w-64 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Recent Searches</span>
+                    <button
+                      onMouseDown={e => { e.preventDefault(); setRecentSearches([]); try { sessionStorage.removeItem(RECENT_KEY); } catch {} }}
+                      className="text-[10px] text-slate-400 hover:text-red-500 font-bold transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {recentSearches.map((term, i) => (
+                    <button
+                      key={i}
+                      onMouseDown={e => { e.preventDefault(); handleLocalSearchChange(term); setShowRecent(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-indigo-50 transition-colors group"
+                    >
+                      <Clock size={12} className="text-slate-300 group-hover:text-indigo-400 flex-shrink-0" />
+                      <span className="text-[12px] text-slate-600 group-hover:text-indigo-700 font-medium truncate">{term}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
