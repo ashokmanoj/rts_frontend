@@ -101,6 +101,8 @@ export default function ChatPanel({ reqId, logs, currentUser, onSendMessage, isC
     setReplyTo({
       id:       log.id,
       author:   log.author,
+      role:     log.role     || null,
+      dept:     log.dept     || null,
       text:     log.text    || null,
       fileName: log.fileName || null,
       isImage:  log.isImage  || false,

@@ -269,7 +269,9 @@ export default function ChatInputBar({ onSend, replyTo, onCancelReply }) {
         <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2">
           <div className="w-0.5 self-stretch rounded-full bg-indigo-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-black text-indigo-600 truncate">{replyTo.author}</p>
+            <p className="text-[9px] font-black text-indigo-600 truncate">
+              {(!replyTo.role || replyTo.role === "Requestor") ? replyTo.author : (replyTo.dept || replyTo.role)}
+            </p>
             <p className="text-[10px] text-slate-500 truncate leading-snug">
               {replyTo.text
                 ? (() => { const t = stripHtml(replyTo.text).replace(/\n+/g, " "); return t.slice(0, 70) + (t.length > 70 ? "…" : ""); })()

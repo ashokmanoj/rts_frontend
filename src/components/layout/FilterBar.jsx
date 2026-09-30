@@ -78,7 +78,7 @@ export default function FilterBar({
     const t = term.trim();
     if (!t) return;
     setRecentSearches(prev => {
-      const next = [t, ...prev.filter(s => s !== t)].slice(0, 5);
+      const next = [t, ...prev.filter(s => s !== t)].slice(0, 10);
       try { sessionStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
@@ -134,7 +134,7 @@ export default function FilterBar({
     if (pushSupported && isSecure && !isSubscribed && permission !== "denied") pushSubscribe();
   }, [isChecked, pushSupported, isSecure, isSubscribed, permission, pushSubscribe]);
 
-  const filterTrigger = "py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-bold hover:border-slate-300";
+  const filterTrigger = "py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-[12px] font-bold hover:border-slate-300";
 
   return (
     <div className="mb-4 sm:mb-6 space-y-3 relative z-40">
@@ -148,7 +148,7 @@ export default function FilterBar({
 
             {/* Requestor Name */}
             <div className="flex flex-col gap-1 flex-1 min-w-[130px] sm:flex-none sm:min-w-[150px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Requestor</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Requestor</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.name || []}
@@ -161,7 +161,7 @@ export default function FilterBar({
 
             {/* Requested Dept */}
             <div className="flex flex-col gap-1 flex-1 min-w-[120px] sm:flex-none sm:min-w-[140px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Requested Dept</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Requested Dept</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.dept || []}
@@ -174,7 +174,7 @@ export default function FilterBar({
 
             {/* Assigned Dept */}
             <div className="flex flex-col gap-1 flex-1 min-w-[120px] sm:flex-none sm:min-w-[140px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Assigned Dept</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Assigned Dept</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.assignedDept || []}
@@ -187,7 +187,7 @@ export default function FilterBar({
 
             {/* Type */}
             <div className="flex flex-col gap-1 flex-1 min-w-[90px] sm:flex-none sm:min-w-[100px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Type</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Type</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.type || []}
@@ -200,7 +200,7 @@ export default function FilterBar({
 
             {/* Requestor Dept Status */}
             <div className="flex flex-col gap-1 flex-1 min-w-[100px] sm:flex-none sm:min-w-[120px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Req. Dept Status</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Req. Dept Status</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.rmStatus || []}
@@ -222,7 +222,7 @@ export default function FilterBar({
 
             {/* Assigned Dept Status */}
             <div className="flex flex-col gap-1 flex-1 min-w-[100px] sm:flex-none sm:min-w-[120px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Assign Dept Status</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Assign Dept Status</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.deptHodStatus || []}
@@ -243,7 +243,7 @@ export default function FilterBar({
 
             {/* Urgency */}
             <div className="flex flex-col gap-1 flex-1 min-w-[90px] sm:flex-none sm:min-w-[110px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Urgency</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Urgency</label>
               <SearchableSelect
                 multiSelect
                 value={activeFilters.priority || []}
@@ -262,7 +262,7 @@ export default function FilterBar({
 
             {/* Date Range */}
             <div className="flex flex-col gap-1 w-full sm:w-auto sm:min-w-[210px]">
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-tight ml-1">Created Date Range</label>
+              <label className="text-[12px] font-black text-slate-600 uppercase tracking-tight ml-1">Created Date Range</label>
               <div className="relative">
                 <DatePicker
                   selectsRange={true}
@@ -274,7 +274,7 @@ export default function FilterBar({
                   }}
                   isClearable={true}
                   placeholderText="Select Date Range"
-                  className="w-full bg-white border border-slate-200 py-1.5 pl-8 pr-4 rounded-lg text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all hover:border-slate-300 h-[30px]"
+                  className="w-full bg-white border border-slate-200 py-1.5 pl-8 pr-4 rounded-lg text-[12px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all hover:border-slate-300 h-[30px]"
                   calendarClassName="custom-beautiful-calendar"
                   dayClassName={() => "custom-beautiful-day"}
                 />
@@ -286,7 +286,7 @@ export default function FilterBar({
             {hasActiveFilter && (
               <button
                 onClick={resetFilters}
-                className="h-[30px] flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 rounded-lg text-[11px] font-black transition-all active:scale-95 shadow-sm self-end"
+                className="h-[30px] flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 rounded-lg text-[12px] font-black transition-all active:scale-95 shadow-sm self-end"
               >
                 <X size={14} /> CLEAR
               </button>
@@ -301,7 +301,7 @@ export default function FilterBar({
           {!isInternsDept && !isFoodTab && (
             <button
               onClick={() => setShowFilters(v => !v)}
-              className={`sm:hidden flex items-center gap-1.5 h-9 px-3 rounded-xl border text-[11px] font-black transition-all active:scale-95 flex-shrink-0 ${
+              className={`sm:hidden flex items-center gap-1.5 h-9 px-3 rounded-xl border text-[12px] font-black transition-all active:scale-95 flex-shrink-0 ${
                 showFilters
                   ? "bg-indigo-50 border-indigo-200 text-indigo-700"
                   : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -502,7 +502,7 @@ export default function FilterBar({
                                   <Icon size={12} className={isActive ? (meta.color || "text-indigo-600") : "text-slate-400"} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className={`text-[11px] font-black leading-tight ${isActive ? (meta.color || "text-indigo-700") : "text-slate-700"}`}>
+                                  <p className={`text-[12px] font-black leading-tight ${isActive ? (meta.color || "text-indigo-700") : "text-slate-700"}`}>
                                     {meta.label || role}
                                   </p>
                                   <p className="text-[9px] text-slate-400 font-medium">
@@ -552,7 +552,7 @@ export default function FilterBar({
                                     : <MapPin size={12} className={isActive ? (meta.color || "text-indigo-600") : "text-slate-400"} />}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className={`text-[11px] font-black leading-tight ${isActive || isSwitching ? (meta.color || "text-indigo-700") : "text-slate-700"}`}>
+                                  <p className={`text-[12px] font-black leading-tight ${isActive || isSwitching ? (meta.color || "text-indigo-700") : "text-slate-700"}`}>
                                     {dept}
                                   </p>
                                 </div>
@@ -594,7 +594,7 @@ export default function FilterBar({
       {/* ── Sub-bar ───────────────────────────────────────────────────────── */}
       {!isFoodTab && <div className="flex flex-wrap items-center justify-between gap-2 px-1 sm:px-2">
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[11px] font-black shadow-sm">
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[12px] font-black shadow-sm">
             {requestCount} {requestCount === 1 ? "REQUEST" : "REQUESTS"}
           </span>
           {hasActiveFilter && (
@@ -605,7 +605,7 @@ export default function FilterBar({
           {["Admin", "Management"].includes(currentUser?.role) && (
             <button
               onClick={() => navigate("/admin/report")}
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-3 sm:px-5 py-2 rounded-full font-black text-[11px] shadow-md hover:shadow-lg transition-all active:scale-95 group whitespace-nowrap"
+              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-3 sm:px-5 py-2 rounded-full font-black text-[12px] shadow-md hover:shadow-lg transition-all active:scale-95 group whitespace-nowrap"
             >
               <BarChart3 size={15} className="group-hover:animate-pulse" />
               <span className="hidden sm:inline">USERS </span>ANALYTICS
@@ -613,7 +613,7 @@ export default function FilterBar({
           )}
           <button
             onClick={onShowInstructions}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-3 sm:px-5 py-2 rounded-full font-black text-[11px] shadow-md transition-all active:scale-95 whitespace-nowrap"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-3 sm:px-5 py-2 rounded-full font-black text-[12px] shadow-md transition-all active:scale-95 whitespace-nowrap"
           >
             <BookOpen size={15} />
             <span className="hidden sm:inline">MANUAL / </span>INSTRUCTIONS

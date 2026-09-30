@@ -158,7 +158,7 @@ export default function RequestTable({ requests, sortMode, currentUser, onOpenDe
                 return (
                   <th
                     key={h}
-                    className={`sticky top-[45px] bg-slate-100 border-t border-b border-r border-black ${i === 0 ? "border-l" : ""} ${i === 4 ? "!border-r-2 !border-r-indigo-400" : ""} p-2 ${fc ? "z-20" : "z-10"} text-center whitespace-nowrap text-[11px]`}
+                    className={`sticky top-[45px] bg-slate-100 border-t border-b border-r border-black ${i === 0 ? "border-l" : ""} ${i === 4 ? "!border-r-2 !border-r-indigo-400" : ""} p-2 ${fc ? "z-20" : "z-10"} text-center whitespace-nowrap text-[12px]`}
                     style={fc ? { left: fc.left, minWidth: fc.width } : undefined}
                   >
                     {h}
@@ -167,11 +167,11 @@ export default function RequestTable({ requests, sortMode, currentUser, onOpenDe
               })}
               <th className="sticky top-[45px] bg-[#f1f5f9] w-8 z-10" />
               {["Details", "Department", "Assign RM", "Assign HOD", "Dept HOD Status", "Request Status"].map((h, i) => (
-                <th key={h} className={`sticky top-[45px] bg-slate-100 border-t border-b border-r border-black ${i === 0 ? "border-l" : ""} p-1 z-10 text-center whitespace-nowrap text-[11px]`}>
+                <th key={h} className={`sticky top-[45px] bg-slate-100 border-t border-b border-r border-black ${i === 0 ? "border-l" : ""} p-1 z-10 text-center whitespace-nowrap text-[12px]`}>
                   {h}
                 </th>
               ))}
-              <th className="sticky top-[45px] bg-[#f1f5f9] border-t border-b border-r border-black p-2 z-10 text-center whitespace-nowrap text-[11px]">
+              <th className="sticky top-[45px] bg-[#f1f5f9] border-t border-b border-r border-black p-2 z-10 text-center whitespace-nowrap text-[12px]">
                 Acknowledgement
               </th>
               
@@ -216,7 +216,7 @@ export default function RequestTable({ requests, sortMode, currentUser, onOpenDe
                     return (
                       <td
                         key={i}
-                        className={`border-b border-r border-black ${i === 0 ? "border-l" : ""} ${i === 4 ? "!border-r-2 !border-r-indigo-400" : ""} p-2 text-center text-[11px] ${bold} whitespace-nowrap`}
+                        className={`border-b border-r border-black ${i === 0 ? "border-l" : ""} ${i === 4 ? "!border-r-2 !border-r-indigo-400" : ""} p-2 text-center text-[12px] ${bold} whitespace-nowrap`}
                         style={fc ? {
                           position: "sticky",
                           left: fc.left,
@@ -287,9 +287,14 @@ export default function RequestTable({ requests, sortMode, currentUser, onOpenDe
                       <span className="flex items-center justify-center gap-1.5">
                         {isReopened && isUnread && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0 inline-block" />}
                         {!isReopened && isUnread && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 inline-block" />}
-                        <span className={`text-blue-600 underline text-[11px] ${isUnread ? "font-black" : "font-bold"}`} title={row.purpose}>
+                        <span className={`text-blue-600 underline text-[12px] ${isUnread ? "font-black" : "font-bold"}`} title={row.purpose}>
                           {row.purpose?.length > 15 ? row.purpose.slice(0, 15) + "…" : row.purpose}
                         </span>
+                        {row.unreadChatCount > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] font-black w-[18px] h-[18px] rounded-full text-center leading-none flex items-center justify-center flex-shrink-0" title={`${row.unreadChatCount} new chat message${row.unreadChatCount === 1 ? "" : "s"}`}>
+                            {row.unreadChatCount}
+                          </span>
+                        )}
                       </span>
                       {isReopened && <span className="text-[9px] font-black text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full">🔄 Reopened</span>}
                       {row.isRecurring && <span className="text-[9px] font-black text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-full">🔁 Recurring</span>}
@@ -300,7 +305,7 @@ export default function RequestTable({ requests, sortMode, currentUser, onOpenDe
                   </td>
 
                   {/* Assigned dept */}
-                  <td className="border-b border-r border-black p-2 text-center text-[11px]">
+                  <td className="border-b border-r border-black p-2 text-center text-[12px]">
                     {row.forwarded ? (
                       <span className="flex items-center justify-center gap-1 text-blue-600 font-bold whitespace-nowrap">
                         <Forward size={13} className="text-blue-500 flex-shrink-0" />

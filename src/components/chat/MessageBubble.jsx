@@ -199,7 +199,11 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
             >
               <div className="w-0.5 rounded-full bg-indigo-400 flex-shrink-0" />
               <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1 min-w-0">
-                <p className="text-[9px] font-black text-indigo-600 truncate">{log.replyTo.author}</p>
+                <p className="text-[9px] font-black text-indigo-600 truncate">
+                  {(!log.replyTo.role || log.replyTo.role === "Requestor")
+                    ? log.replyTo.author
+                    : (log.replyTo.dept || log.replyTo.role)}
+                </p>
                 <p className="text-[10px] text-slate-500 truncate leading-tight">{replyPreviewText}</p>
               </div>
             </div>

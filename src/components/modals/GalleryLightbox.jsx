@@ -64,19 +64,19 @@ export default function GalleryLightbox({ urls, fileNames, startIndex = 0, onClo
     });
   }, []);
 
-  // Keyboard
+  // Keyboard — use capture phase so ESC is intercepted before any parent modal's handler
   useEffect(() => {
     const h = (e) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); return; }
       if (e.key === "ArrowLeft")          setIdx(i => Math.max(0, i - 1));
       if (e.key === "ArrowRight")         setIdx(i => Math.min(total - 1, i + 1));
-      if (e.key === "Escape")             onClose();
       if (e.key === "+" || e.key === "=") applyZoom(0.25);
       if (e.key === "-")                  applyZoom(-0.25);
       if (e.key === "r" || e.key === "R") setRotation(r => (r + 90) % 360);
       if (e.key === "0")                  reset();
     };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
+    window.addEventListener("keydown", h, { capture: true });
+    return () => window.removeEventListener("keydown", h, { capture: true });
   }, [total, onClose, applyZoom, reset]);
 
   // Mouse wheel — cursor-centred zoom (non-passive so we can preventDefault)

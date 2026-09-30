@@ -435,7 +435,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
                 {!isInternRole && (
                   <button
                     onClick={() => setActiveTab("requests")}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[12px] transition-all ${
                       activeTab === "requests" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -445,7 +445,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
                 {showFoodTab && (
                   <button
                     onClick={() => setActiveTab("food")}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[12px] transition-all ${
                       activeTab === "food" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -455,7 +455,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
                 {showMgmtTab && (
                   <button
                     onClick={() => setActiveTab("management")}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[12px] transition-all ${
                       activeTab === "management" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -465,7 +465,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
                 {showRolesTab && (
                   <button
                     onClick={() => setActiveTab("roles")}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[11px] transition-all ${
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[12px] transition-all ${
                       activeTab === "roles" ? "bg-violet-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -507,7 +507,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
             <div className="relative flex-shrink-0" ref={sortDropdownRef}>
               <button
                 onClick={() => setSortDropdownOpen(prev => !prev)}
-                className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[11px] font-black transition-all shadow-sm ${
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-xl border text-[12px] font-black transition-all shadow-sm ${
                   isActive
                     ? "bg-indigo-600 text-white border-indigo-600"
                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
@@ -524,7 +524,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
                     <button
                       key={opt.key}
                       onClick={() => applySort(opt.key)}
-                      className={`flex items-center w-full px-4 py-2.5 text-left text-[11px] font-bold transition-colors ${
+                      className={`flex items-center w-full px-4 py-2.5 text-left text-[12px] font-bold transition-colors ${
                         currentMode === opt.key
                           ? "bg-indigo-50 text-indigo-700"
                           : "text-slate-600 hover:bg-slate-50"
@@ -545,7 +545,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
             <button
               onClick={() => setShowBroadcast(true)}
               title="Send Broadcast Notification"
-              className="flex items-center gap-1.5 h-9 px-3 bg-violet-50 border border-violet-200 rounded-xl text-[11px] font-black text-violet-600 hover:bg-violet-100 hover:border-violet-300 transition-all active:scale-95 shadow-sm flex-shrink-0"
+              className="flex items-center gap-1.5 h-9 px-3 bg-violet-50 border border-violet-200 rounded-xl text-[12px] font-black text-violet-600 hover:bg-violet-100 hover:border-violet-300 transition-all active:scale-95 shadow-sm flex-shrink-0"
             >
               <Megaphone size={13} />
               <span className="hidden sm:inline">Broadcast</span>
@@ -553,7 +553,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
             <button
               onClick={() => setShowBroadcastSend(true)}
               title="Send Ticket to All Users"
-              className="flex items-center gap-1.5 h-9 px-3 bg-indigo-50 border border-indigo-200 rounded-xl text-[11px] font-black text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300 transition-all active:scale-95 shadow-sm flex-shrink-0"
+              className="flex items-center gap-1.5 h-9 px-3 bg-indigo-50 border border-indigo-200 rounded-xl text-[12px] font-black text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300 transition-all active:scale-95 shadow-sm flex-shrink-0"
             >
               <Radio size={13} />
               <span className="hidden sm:inline">Send to All</span>
@@ -569,7 +569,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
           }
           disabled={activeTab !== "food" && (isFiltering || loadingReqs)}
           title="Refresh"
-          className="flex items-center gap-1.5 h-9 px-3 bg-sky-50 border border-sky-200 rounded-xl text-[11px] font-black text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all active:scale-95 shadow-sm disabled:opacity-50 flex-shrink-0"
+          className="flex items-center gap-1.5 h-9 px-3 bg-sky-50 border border-sky-200 rounded-xl text-[12px] font-black text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all active:scale-95 shadow-sm disabled:opacity-50 flex-shrink-0"
         >
           <RefreshCw size={13} className={(activeTab !== "food" && (isFiltering || loadingReqs)) ? "animate-spin" : ""} />
           <span className="hidden sm:inline">Refresh</span>
@@ -694,7 +694,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
           className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-full shadow-2xl shadow-indigo-300 flex items-center justify-center transition-all group"
         >
           <Headphones size={24} />
-          <span className="absolute right-16 bg-slate-800 text-white text-[11px] font-black px-3 py-1.5 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+          <span className="absolute right-16 bg-slate-800 text-white text-[12px] font-black px-3 py-1.5 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
             RTS Help Desk
           </span>
         </button>

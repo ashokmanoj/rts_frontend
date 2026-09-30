@@ -47,6 +47,13 @@ export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
     load();
   }, [url]);
 
+  // ESC closes this modal before any parent modal's handler (capture phase)
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); } };
+    window.addEventListener("keydown", h, { capture: true });
+    return () => window.removeEventListener("keydown", h, { capture: true });
+  }, [onClose]);
+
   const switchSheet = (idx) => {
     setActiveSheet(idx);
     if (wbRef.current) parseSheet(wbRef.current, idx);
