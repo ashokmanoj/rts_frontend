@@ -287,9 +287,10 @@ export default function ManagementPortal({ currentUser, onLogout }) {
 
   const handleViewDetails = useCallback(async (row) => {
     setSelectedReq(row);
+    // Always clear chat badge immediately when user opens the modal
+    setRequests(prev => prev.map(r => r.id === row.id ? { ...r, seen: true, unreadChatCount: 0 } : r));
     if (!row.seen) {
       markRequestSeen(row.id).catch(() => {});
-      setRequests(prev => prev.map(r => r.id === row.id ? { ...r, seen: true } : r));
     }
     setReadTimestamps(prev => ({ ...prev, [row.id]: Date.now() }));
     try {

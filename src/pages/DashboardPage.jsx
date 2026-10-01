@@ -276,11 +276,10 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   const handleOpenDetails = async (row) => {
     setSelectedReq(row);
     setActiveModal("details");
+    // Always clear chat badge immediately when user opens the modal
+    setRequests((prev) => prev.map((r) => (r.id === row.id ? { ...r, seen: true, unreadChatCount: 0 } : r)));
     if (!row.seen) {
-      setTimeout(async () => {
-        setRequests((prev) => prev.map((r) => (r.id === row.id ? { ...r, seen: true } : r)));
-        await markRequestSeen(row.id).catch(() => {});
-      }, 300);
+      markRequestSeen(row.id).catch(() => {});
     }
     try {
       const result = await fetchChat(row.id);

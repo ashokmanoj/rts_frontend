@@ -5,6 +5,15 @@ import { resolveFileUrl } from "../../utils/security";
 
 const MAX_ROWS = 500;
 
+function formatCell(val) {
+  if (val instanceof Date && !isNaN(val)) {
+    const d = String(val.getDate()).padStart(2, "0");
+    const m = String(val.getMonth() + 1).padStart(2, "0");
+    return `${d}/${m}/${val.getFullYear()}`;
+  }
+  return val !== undefined && val !== null ? String(val) : "";
+}
+
 export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
   const [sheetNames,  setSheetNames]  = useState([]);
   const [activeSheet, setActiveSheet] = useState(0);
@@ -34,7 +43,7 @@ export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
         const res = await fetch(resolved);
         if (!res.ok) throw new Error("Network error");
         const buf = await res.arrayBuffer();
-        const wb  = XLSX.read(buf, { type: "array" });
+        const wb  = XLSX.read(buf, { type: "array", cellDates: true });
         wbRef.current = wb;
         setSheetNames(wb.SheetNames);
         parseSheet(wb, 0);
@@ -164,9 +173,9 @@ export default function SpreadsheetPreviewModal({ url, fileName, onClose }) {
                       <td
                         key={ci}
                         className="px-3 py-1.5 text-slate-600 border-r border-slate-100 whitespace-nowrap max-w-[240px] truncate"
-                        title={row[ci] !== undefined && row[ci] !== null ? String(row[ci]) : ""}
+                        title={formatCell(row[ci])}
                       >
-                        {row[ci] !== undefined && row[ci] !== null ? String(row[ci]) : ""}
+                        {formatCell(row[ci])}
                       </td>
                     ))}
                   </tr>
