@@ -8,6 +8,7 @@ import { renderRichText } from "../../utils/richText";
 import { sanitizeHtml, stripHtml, isHtmlContent } from "../../utils/sanitize";
 import VoiceMessageBubble      from "./VoiceMessageBubble";
 import SpreadsheetPreviewModal from "../modals/SpreadsheetPreviewModal";
+import PDFPreviewModal         from "../modals/PDFPreviewModal";
 import GalleryLightbox         from "../modals/GalleryLightbox";
 import { getAvatarClass, getInitials } from "../../utils/roleStyles";
 import { resolveFileUrl } from "../../utils/security";
@@ -121,6 +122,7 @@ const isSpreadsheetFile = (name = "") => /\.(csv|xlsx|xls)$/i.test(name);
 export default function MessageBubble({ log, onReply, onScrollToMessage, currentUser }) {
   const [lightboxIdx,     setLightboxIdx]     = useState(-1);
   const [spreadsheetOpen, setSpreadsheetOpen] = useState(false);
+  const [pdfOpen,         setPdfOpen]         = useState(false);
   const [hovered,         setHovered]         = useState(false);
 
   const isOwn   = !!currentUser && currentUser.empId === log.authorId;
@@ -131,6 +133,7 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
 
   const { Icon, color, bg } = hasFile ? getFileIcon(log.fileName || "") : {};
   const isSpreadsheet = hasFile && !log.isImage && isSpreadsheetFile(log.fileName);
+  const isPdf         = hasFile && !log.isImage && /\.pdf$/i.test(log.fileName || "");
 
   // Lightbox sources: group = all images; single = just this one
   const lightboxUrls  = isGroup ? log.images.map(i => resolveFileUrl(i.fileUrl))   : [resolveFileUrl(log.fileUrl)];
@@ -152,6 +155,9 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
       )}
       {spreadsheetOpen && (
         <SpreadsheetPreviewModal url={log.fileUrl} fileName={log.fileName} onClose={() => setSpreadsheetOpen(false)} />
+      )}
+      {pdfOpen && (
+        <PDFPreviewModal url={log.fileUrl} fileName={log.fileName} onClose={() => setPdfOpen(false)} />
       )}
 
       <div
@@ -257,8 +263,20 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
               </button>
             )}
 
-            {/* ── Non-image, non-spreadsheet file — download link ── */}
-            {hasFile && !log.isImage && !isSpreadsheet && (
+            {/* ── PDF file — preview in popup ── */}
+            {hasFile && !log.isImage && isPdf && (
+              <button
+                onClick={() => setPdfOpen(true)}
+                className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl px-3 py-2 text-[11px] font-bold transition-all active:scale-95"
+              >
+                <FileText size={14} className="text-red-500 flex-shrink-0" />
+                <span className="truncate text-slate-700 max-w-[160px]">{log.fileName}</span>
+                <Eye size={11} className="text-red-400 flex-shrink-0" />
+              </button>
+            )}
+
+            {/* ── Other files — download ── */}
+            {hasFile && !log.isImage && !isSpreadsheet && !isPdf && (
               <a
                 href={resolveFileUrl(log.fileUrl)}
                 download={log.fileName}

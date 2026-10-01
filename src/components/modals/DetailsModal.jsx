@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, ZoomIn, Bell, Send, ShieldCheck, Calendar, AlertTriangle, ThumbsUp, ThumbsDown, FileSpreadsheet, Eye, MessageSquare, Download, Users, ChevronRight, Search, RefreshCw, StopCircle, Check, Paperclip, Link2, Plus } from "lucide-react";
+import { X, User, ChevronDown, CheckCircle, XCircle, Clock, Forward, ImageOff, ZoomIn, Bell, Send, ShieldCheck, Calendar, AlertTriangle, ThumbsUp, ThumbsDown, FileSpreadsheet, FileText, Eye, MessageSquare, Download, Users, ChevronRight, Search, RefreshCw, StopCircle, Check, Paperclip, Link2, Plus } from "lucide-react";
 import { get, patch } from "../../services/api";
 import { attachAfterClose, fetchRequestThread } from "../../services/requestService";
 import { renderRichText } from "../../utils/richText";
@@ -14,6 +14,7 @@ import { resolveFileUrl } from "../../utils/security";
 import StatusBadge            from "../table/StatusBadge";
 import ChatPanel              from "../chat/ChatPanel";
 import SpreadsheetPreviewModal from "./SpreadsheetPreviewModal";
+import PDFPreviewModal         from "./PDFPreviewModal";
 import GalleryLightbox         from "./GalleryLightbox";
 import Spinner                 from "../ui/Spinner";
 import SearchableSelect        from "../ui/SearchableSelect";
@@ -326,10 +327,19 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   // Directly-assigned persons get Forward + Checking + Close buttons
   const canAssignedPersonActions = isSpecificallyAssigned && !isClosed && !isPendingAck && !isAdmin && !isForwardedAway && !isCcUser && viewCloseTicketGate;
 
-  const isImageUrl       = (url) => url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
-  const isSpreadsheetUrl = (url) => url && /\.(csv|xlsx|xls)(\?.*)?$/i.test(url);
+  // Check by filename as well as URL — new DB-stored files have UUID URLs with no extension
+  const isImageFile      = (url, name) =>
+    /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url  || "") ||
+    /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name || "");
+  const isSpreadsheetFile = (url, name) =>
+    /\.(csv|xlsx|xls)(\?.*)?$/i.test(url  || "") ||
+    /\.(csv|xlsx|xls)$/i.test(name || "");
+  const isPdfFile         = (url, name) =>
+    /\.pdf(\?.*)?$/i.test(url  || "") ||
+    /\.pdf$/i.test(name || "");
 
   const [spreadsheetPreview, setSpreadsheetPreview] = useState(null); // { url, fileName }
+  const [pdfPreview,         setPdfPreview]         = useState(null); // { url, fileName }
 
   const handleAttachPostClose = async (files) => {
     await attachAfterClose(req.id, files);
@@ -471,6 +481,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
     <>
       {lightboxData && <GalleryLightbox urls={lightboxData.urls} fileNames={lightboxData.names} startIndex={lightboxData.index} onClose={() => setLightboxData(null)} />}
       {spreadsheetPreview && <SpreadsheetPreviewModal url={spreadsheetPreview.url} fileName={spreadsheetPreview.fileName} onClose={() => setSpreadsheetPreview(null)} />}
+      {pdfPreview         && <PDFPreviewModal         url={pdfPreview.url}         fileName={pdfPreview.fileName}         onClose={() => setPdfPreview(null)} />}
 
       {/* Checking deadline popup */}
       {showCheckingModal && (
@@ -659,7 +670,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                     {approvalLoading
                       ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/>
                       : <Forward size={12}/>}
-                    {hodForwardDept ? `Forward to ${hodForwardDept}` : "Forward"}
+                    {hodForwardDept ? `Approve & Forward to ${hodForwardDept}` : "Approve & Forward"}
                   </button>
                 </div>
               </div>
@@ -867,7 +878,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                     {approvalLoading
                       ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/>
                       : <Forward size={12}/>}
-                    {deptHodForwardDept ? `Forward to ${deptHodForwardDept}` : "Forward"}
+                    {deptHodForwardDept ? `Approve & Forward to ${deptHodForwardDept}` : "Approve & Forward"}
                   </button>
                 </div>
               </div>
@@ -909,7 +920,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
           <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
 
             {/* LEFT PANEL */}
-            <div className={`overflow-y-auto p-4 sm:p-5 space-y-3 pb-6 md:pb-8 min-h-0 md:flex md:flex-col md:w-[48%] md:flex-none md:border-r md:border-slate-200 ${showChat ? "hidden" : "flex flex-col flex-1 border-b border-slate-200"}`}>
+            <div className={`overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-3 pb-6 md:pb-8 min-h-0 md:flex md:flex-col md:w-[48%] md:flex-none md:border-r md:border-slate-200 ${showChat ? "hidden" : "flex flex-col flex-1 border-b border-slate-200"}`}>
 
               <ApprovalProgress
                 rmStatus={req?.rmStatus}           hodStatus={req?.hodStatus}
@@ -932,7 +943,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
 
               <div>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 ml-0.5">Request Title</p>
-                <div className="w-full bg-slate-200 p-3 rounded-xl text-center font-bold text-slate-500 text-[12px] border border-slate-300 cursor-not-allowed select-none">
+                <div className="w-full bg-slate-200 p-3 rounded-xl text-center font-bold text-slate-500 text-[12px] border border-slate-300 cursor-not-allowed select-none break-all overflow-hidden">
                   <span className="text-slate-400 text-[11px]">🔒 </span>{req?.purpose}
                 </div>
               </div>
@@ -1238,35 +1249,47 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                 <div className="border-2 border-dashed border-blue-100 p-3 flex justify-center items-center rounded-xl bg-blue-50/30 min-h-[90px]">
                   {req?.fileUrls?.length > 0 ? (
                     <div className="flex flex-wrap gap-3 justify-center">
-                      {req.fileUrls.map((url, idx) => (
-                        isImageUrl(url) ? (
+                      {req.fileUrls.map((url, idx) => {
+                        const name = req.fileNames?.[idx] || "";
+                        return isImageFile(url, name) ? (
                           <div key={idx} className="relative group cursor-pointer" onClick={() => {
-                            const imageUrls   = (req.fileUrls || []).filter(isImageUrl);
-                            const imageNames  = (req.fileUrls || []).map((u, i) => req.fileNames?.[i] || `Image ${i + 1}`).filter((_, i) => isImageUrl((req.fileUrls || [])[i]));
+                            const imageUrls   = (req.fileUrls || []).filter((u, i) => isImageFile(u, req.fileNames?.[i] || ""));
+                            const imageNames  = (req.fileUrls || []).map((u, i) => req.fileNames?.[i] || `Image ${i + 1}`).filter((_, i) => isImageFile((req.fileUrls || [])[i], req.fileNames?.[i] || ""));
                             setLightboxData({ urls: imageUrls, names: imageNames, index: imageUrls.indexOf(url) });
                           }}>
-                            <img src={resolveFileUrl(url)} alt={req.fileNames?.[idx] || "attachment"} className="h-24 w-24 object-cover rounded-xl shadow-md border-2 border-white group-hover:brightness-90 transition-all"/>
+                            <img src={resolveFileUrl(url)} alt={name || "attachment"} className="h-24 w-24 object-cover rounded-xl shadow-md border-2 border-white group-hover:brightness-90 transition-all"/>
                             <div className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl bg-black/20">
                               <div className="bg-black/60 rounded-full p-1"><ZoomIn size={14} className="text-white"/></div>
-                              <a href={resolveFileUrl(url)} download={req.fileNames?.[idx] || "image"} onClick={e => e.stopPropagation()} className="bg-black/60 hover:bg-emerald-600 rounded-full p-1 transition-colors" title="Download"><Download size={14} className="text-white"/></a>
+                              <a href={resolveFileUrl(url)} download={name || "image"} onClick={e => e.stopPropagation()} className="bg-black/60 hover:bg-emerald-600 rounded-full p-1 transition-colors" title="Download"><Download size={14} className="text-white"/></a>
                             </div>
                           </div>
-                        ) : isSpreadsheetUrl(url) ? (
+                        ) : isSpreadsheetFile(url, name) ? (
                           <button
                             key={idx}
-                            onClick={() => setSpreadsheetPreview({ url, fileName: req.fileNames?.[idx] || "attachment" })}
+                            onClick={() => setSpreadsheetPreview({ url, fileName: name || "attachment" })}
                             className="flex items-center gap-2 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold text-[11px] px-3 py-2 rounded-xl transition-all active:scale-95"
                           >
                             <FileSpreadsheet size={14} className="text-teal-600 flex-shrink-0" />
-                            <span className="truncate max-w-[160px]">{req.fileNames?.[idx] || "View spreadsheet"}</span>
+                            <span className="truncate max-w-[160px]">{name || "View spreadsheet"}</span>
                             <Eye size={11} className="text-teal-400 flex-shrink-0" />
                           </button>
+                        ) : isPdfFile(url, name) ? (
+                          <button
+                            key={idx}
+                            onClick={() => setPdfPreview({ url, fileName: name || "document.pdf" })}
+                            className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold text-[11px] px-3 py-2 rounded-xl transition-all active:scale-95"
+                          >
+                            <FileText size={14} className="text-red-500 flex-shrink-0" />
+                            <span className="truncate max-w-[160px]">{name || "View PDF"}</span>
+                            <Eye size={11} className="text-red-400 flex-shrink-0" />
+                          </button>
                         ) : (
-                          <a key={idx} href={resolveFileUrl(url)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-bold text-[12px] underline">
-                            📎 {req.fileNames?.[idx] || "View attachment"}
+                          <a key={idx} href={resolveFileUrl(url)} download={name || "attachment"} className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px] px-3 py-2 rounded-xl transition-all">
+                            <Paperclip size={14} className="text-slate-400 flex-shrink-0" />
+                            <span className="truncate max-w-[160px]">{name || "Download attachment"}</span>
                           </a>
-                        )
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-slate-300"><ImageOff size={28}/><span className="text-[10px] font-bold text-slate-400">No attachment</span></div>
@@ -1358,6 +1381,11 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                             ) : isHOD ? (
                               <button onClick={() => setShowHodApproveModal(true)} disabled={approvalLoading || isActedApproved} className="bg-emerald-500 disabled:opacity-50 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-emerald-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5 relative">
                                 {pendingDecision === "Approved" ? <Spinner size={13}/> : <CheckCircle size={13}/>} Approve
+                                {isActedApproved && <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><CheckCircle size={10} className="text-emerald-500"/></span>}
+                              </button>
+                            ) : isAssignedDeptUser ? (
+                              <button onClick={() => setShowDeptHodApproveModal(true)} disabled={approvalLoading || isActedApproved} className="bg-emerald-500 disabled:opacity-50 text-white py-2.5 rounded-xl font-black text-[11px] hover:bg-emerald-600 shadow-md uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5 relative">
+                                <CheckCircle size={13}/> Approve
                                 {isActedApproved && <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><CheckCircle size={10} className="text-emerald-500"/></span>}
                               </button>
                             ) : (
@@ -1565,9 +1593,9 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                    {req.closeData.fileUrls?.length > 0 && (
                       <div className="pt-1 space-y-1.5">
                         {req.closeData.fileUrls.map((url, idx) => {
-                          const name = req.closeData.fileNames?.[idx] || `attachment-${idx + 1}`;
+                          const name     = req.closeData.fileNames?.[idx] || `attachment-${idx + 1}`;
                           const resolved = resolveFileUrl(url);
-                          return isImageUrl(url) ? (
+                          return isImageFile(url, name) ? (
                             <div key={idx} className="relative group w-fit">
                               <img src={resolved} onClick={() => setLightboxData({ urls: req.closeData.fileUrls, names: req.closeData.fileNames || [], index: idx })} className="h-20 w-auto rounded-lg border-2 border-white shadow-sm cursor-pointer hover:brightness-90 transition-all"/>
                               <div className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg bg-black/20">
@@ -1575,12 +1603,18 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                                 <a href={resolved} download={name} onClick={e => e.stopPropagation()} className="bg-black/60 hover:bg-emerald-600 rounded-full p-1 transition-colors" title="Download"><Download size={13} className="text-white"/></a>
                               </div>
                             </div>
-                          ) : isSpreadsheetUrl(url) ? (
+                          ) : isSpreadsheetFile(url, name) ? (
                             <button key={idx} onClick={() => setSpreadsheetPreview({ url, fileName: name })} className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all">
                               <FileSpreadsheet size={12} className="text-teal-600" /> {name} <Eye size={10} className="text-teal-400" />
                             </button>
+                          ) : isPdfFile(url, name) ? (
+                            <button key={idx} onClick={() => setPdfPreview({ url, fileName: name })} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all">
+                              <FileText size={12} className="text-red-500" /> {name} <Eye size={10} className="text-red-400" />
+                            </button>
                           ) : (
-                            <a key={idx} href={resolved} target="_blank" rel="noreferrer" className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 underline">📎 {name}</a>
+                            <a key={idx} href={resolved} download={name} className="text-slate-600 font-bold text-[10px] flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg transition-all">
+                              <Paperclip size={11} className="text-slate-400" /> {name}
+                            </a>
                           );
                         })}
                       </div>
@@ -1627,8 +1661,11 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                 </div>
               )}
 
-              {/* Stop Recurring — DeptHOD only, on parent recurring requests */}
-              {isDeptHOD && req?.isRecurring && !isClosed && req?.assignedDept === currentUser?.dept && (
+              {/* Stop Recurring — DeptHOD of assigned dept, OR RM/HOD of requestor's own dept */}
+              {req?.isRecurring && !isClosed && (
+                (isDeptHOD && req?.assignedDept === currentUser?.dept) ||
+                ((isRM || isHOD) && req?.dept === currentUser?.dept && !isAssignedDeptUser)
+              ) && (
                 <div className="mt-3 border-t border-slate-100 pt-3">
                   <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-2 flex items-center gap-1">
                     <StopCircle size={10}/> Recurring Control
@@ -1641,7 +1678,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                     {stopRecurringLoading ? <span className="animate-spin">⟳</span> : <StopCircle size={14}/>}
                     Stop Recurring
                   </button>
-                  <p className="text-[10px] text-slate-400 text-center mt-1.5 font-medium">No new auto-requests will be created after stopping.</p>
+                  <p className="text-[10px] text-slate-400 text-center mt-1.5 font-medium">Ticket will no longer auto-reopen after each resolution.</p>
                 </div>
               )}
             </div>
