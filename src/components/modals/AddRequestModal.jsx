@@ -415,11 +415,15 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser, initia
       (u.roles || []).some(r => ASSIGNABLE_ROLES.has(r.role))
     );
   const CC_ROLES = new Set(["RM", "HOD", "DeptHOD"]);
-  const filterCcRoles = (users) =>
-    users.filter(u =>
-      CC_ROLES.has(u.role) ||
-      (u.roles || []).some(r => CC_ROLES.has(r.role))
+  const filterCcRoles = (users, dept) => {
+    const allowed = dept === "Operations-Sikkim"
+      ? new Set([...CC_ROLES, "Requestor"])
+      : CC_ROLES;
+    return users.filter(u =>
+      allowed.has(u.role) ||
+      (u.roles || []).some(r => allowed.has(r.role))
     );
+  };
 
   // Auto-load users when dept changes
   useEffect(() => {
@@ -501,7 +505,7 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser, initia
     setCcLoadingDepts(prev => new Set(prev).add(dept));
     try {
       const data  = await get(`/requests/users-by-dept?depts=${encodeURIComponent(dept)}`);
-      const users = filterCcRoles(Array.isArray(data) ? data : (data?.data ?? []));
+      const users = filterCcRoles(Array.isArray(data) ? data : (data?.data ?? []), dept);
       setCcDeptUsers(prev => ({ ...prev, [dept]: users }));
     } catch {
       setCcDeptUsers(prev => ({ ...prev, [dept]: [] }));
@@ -656,16 +660,11 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser, initia
   const urgencyInfo     = priorityFromDueDate(dueDate);
   const today           = new Date().toISOString().split("T")[0];
   const assignedDept    = initialDept || selectedDept;
-  const isSikkimUser    = currentUser?.dept === "Operations-Sikkim";
-  const filteredCcDepts = DEPARTMENTS.filter(d => {
-    const matchesSearch = d.toLowerCase().includes(ccDeptSearch.toLowerCase());
-    if (isSikkimUser) {
-      // Sikkim requestors can only CC within their own dept
-      return d === "Operations-Sikkim" && matchesSearch;
-    }
-    // Non-Sikkim requestors: hide Operations-Sikkim from CC options
-    return d !== assignedDept && d !== currentUser?.dept && d !== "Operations-Sikkim" && matchesSearch;
-  });
+  const filteredCcDepts = DEPARTMENTS.filter(d =>
+    d !== assignedDept &&
+    d !== currentUser?.dept &&
+    d.toLowerCase().includes(ccDeptSearch.toLowerCase())
+  );
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
