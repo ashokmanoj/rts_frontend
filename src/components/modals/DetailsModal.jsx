@@ -121,6 +121,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   const [hodDeptSearch,        setHodDeptSearch]        = useState("");
   // Stop recurring
   const [stopRecurringLoading, setStopRecurringLoading] = useState(false);
+  const [recurringStopped,     setRecurringStopped]     = useState(false);
   // Forward dept+person combined picker
   const [fwdDeptUsers,   setFwdDeptUsers]   = useState({});
   const [fwdLoadingDept, setFwdLoadingDept] = useState(false);
@@ -456,8 +457,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
     setStopRecurringLoading(true);
     try {
       await patch(`/requests/${req.id}/stop-recurring`, {});
-      // reload parent by closing — parent list refresh will update it
-      onClose();
+      setRecurringStopped(true);
     } catch (err) {
       alert(err?.message || "Failed to stop recurring.");
     } finally {
@@ -902,7 +902,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               {isClosed && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-black">🔒 Closed</span>}
               {isPendingAck && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">⏳ Pending Acknowledgement</span>}
               {req?.reopenedAt && !isClosed && <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black"><RefreshCw size={9}/> Reopened</span>}
-              {req?.isRecurring && <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-black">🔁 Recurring</span>}
+              {req?.isRecurring && !recurringStopped && <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-black">🔁 Recurring</span>}
               {isOwnRequest && !isRequestorMode && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">Your Request</span>}
               {isCcUser && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">📋 CC Viewer</span>}
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${roleBadgeCls}`}>{currentUser?.dept} Department</span>
@@ -1662,7 +1662,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               )}
 
               {/* Stop Recurring — DeptHOD of assigned dept, OR RM/HOD of requestor's own dept */}
-              {req?.isRecurring && !isClosed && (
+              {req?.isRecurring && !recurringStopped && !isClosed && (
                 (isDeptHOD && req?.assignedDept === currentUser?.dept) ||
                 ((isRM || isHOD) && req?.dept === currentUser?.dept && !isAssignedDeptUser)
               ) && (

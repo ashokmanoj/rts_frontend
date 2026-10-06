@@ -656,11 +656,16 @@ export default function AddRequestModal({ onClose, onSubmit, currentUser, initia
   const urgencyInfo     = priorityFromDueDate(dueDate);
   const today           = new Date().toISOString().split("T")[0];
   const assignedDept    = initialDept || selectedDept;
-  const filteredCcDepts = DEPARTMENTS.filter(d =>
-    d !== assignedDept &&
-    d !== currentUser?.dept &&
-    d.toLowerCase().includes(ccDeptSearch.toLowerCase())
-  );
+  const isSikkimUser    = currentUser?.dept === "Operations-Sikkim";
+  const filteredCcDepts = DEPARTMENTS.filter(d => {
+    const matchesSearch = d.toLowerCase().includes(ccDeptSearch.toLowerCase());
+    if (isSikkimUser) {
+      // Sikkim requestors can only CC within their own dept
+      return d === "Operations-Sikkim" && matchesSearch;
+    }
+    // Non-Sikkim requestors: hide Operations-Sikkim from CC options
+    return d !== assignedDept && d !== currentUser?.dept && d !== "Operations-Sikkim" && matchesSearch;
+  });
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
