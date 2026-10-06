@@ -120,6 +120,7 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   const [hodApproveMode,       setHodApproveMode]       = useState(null); // null | "forward"
   const [hodForwardDept,       setHodForwardDept]       = useState("");
   const [hodDeptSearch,        setHodDeptSearch]        = useState("");
+  const [hodSelectedPersons,   setHodSelectedPersons]   = useState([]);
   // Stop recurring
   const [stopRecurringLoading, setStopRecurringLoading] = useState(false);
   const [recurringStopped,     setRecurringStopped]     = useState(false);
@@ -380,6 +381,35 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
     setHodApproveMode(null);
     setHodForwardDept("");
     setHodDeptSearch("");
+    setHodSelectedPersons([]);
+  };
+
+  const handleHodSelectInternalMode = async () => {
+    setHodApproveMode("internal");
+    if (!deptUsersForApproval.length && !loadingDeptUsers) {
+      setLoadingDeptUsers(true);
+      try {
+        const users = await get(`/requests/users-by-dept?depts=${encodeURIComponent(currentUser?.dept || "")}`);
+        setDeptUsersForApproval(Array.isArray(users) ? users : []);
+      } catch {}
+      setLoadingDeptUsers(false);
+    }
+  };
+
+  const handleHodInternalConfirm = async () => {
+    if (approvalLoading || hodSelectedPersons.length === 0) return;
+    setApprovalLoading(true);
+    try {
+      const dateTime = getNowDateTime();
+      const empIds = hodSelectedPersons.map(p => p.empId).join(",");
+      const names  = hodSelectedPersons.map(p => p.name).join(",");
+      await onApproval(req.id, "Approved", dateTime, currentUser, approvalComment, selectedDept, null, null, { assignedPersonEmpId: empIds, assignedPersonName: names });
+      setApprovalComment("");
+      closeHodModal();
+    } finally {
+      setApprovalLoading(false);
+      setPendingDecision(null);
+    }
   };
 
   const handleHodForwardConfirm = async () => {
@@ -568,22 +598,24 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               <div className="flex items-center gap-2">
                 {hodApproveMode && (
                   <button
-                    onClick={() => { setHodApproveMode(null); setHodForwardDept(""); setHodDeptSearch(""); }}
+                    onClick={() => { setHodApproveMode(null); setHodForwardDept(""); setHodDeptSearch(""); setHodSelectedPersons([]); setDeptUsersSearch(""); }}
                     className="p-1 hover:bg-slate-100 rounded-lg transition-colors mr-0.5"
                   >
                     <ChevronRight size={15} className="text-slate-400 rotate-180"/>
                   </button>
                 )}
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${hodApproveMode === "forward" ? "bg-blue-100" : "bg-emerald-100"}`}>
-                  {hodApproveMode === "forward" ? <Forward size={15} className="text-blue-600"/> : <CheckCircle size={15} className="text-emerald-600"/>}
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${hodApproveMode === "forward" ? "bg-blue-100" : hodApproveMode === "internal" ? "bg-teal-100" : "bg-emerald-100"}`}>
+                  {hodApproveMode === "forward" ? <Forward size={15} className="text-blue-600"/> : hodApproveMode === "internal" ? <Users size={15} className="text-teal-600"/> : <CheckCircle size={15} className="text-emerald-600"/>}
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-800">
-                    {hodApproveMode === "forward" ? "Forward to Department" : "Approve Request"}
+                    {hodApproveMode === "forward" ? "Forward to Department" : hodApproveMode === "internal" ? "Assign Internal" : "Approve Request"}
                   </h3>
                   <p className="text-[10px] text-slate-400 font-medium">
                     {hodApproveMode === "forward"
                       ? hodForwardDept ? `Selected: ${hodForwardDept}` : "Select a department"
+                      : hodApproveMode === "internal"
+                      ? hodSelectedPersons.length > 0 ? `${hodSelectedPersons.length} person${hodSelectedPersons.length > 1 ? "s" : ""} selected` : "Select one or more people"
                       : "Choose how to approve"}
                   </p>
                 </div>
@@ -612,6 +644,21 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
                 </button>
 
                 <button
+                  onClick={handleHodSelectInternalMode}
+                  disabled={approvalLoading}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-teal-300 hover:bg-teal-50/50 transition-all text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-teal-200 transition-colors">
+                    <Users size={17} className="text-teal-600"/>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black text-slate-800">Approve &amp; Assign Internal</p>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">Approve and assign to people in your department</p>
+                  </div>
+                  <ChevronRight size={16} className="text-slate-300 flex-shrink-0 group-hover:text-teal-400 transition-colors"/>
+                </button>
+
+                <button
                   onClick={() => setHodApproveMode("forward")}
                   className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left group"
                 >
@@ -631,7 +678,75 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               </div>
             )}
 
-            {/* Step 2: Forward — dept list with search */}
+            {/* Step 2: Assign Internal — person list */}
+            {hodApproveMode === "internal" && (
+              <div className="flex flex-col" style={{ maxHeight: "420px" }}>
+                <div className="px-3 py-2.5 border-b border-slate-100">
+                  <div className="relative">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                    <input
+                      value={deptUsersSearch}
+                      onChange={e => setDeptUsersSearch(e.target.value)}
+                      placeholder="Search people..."
+                      className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[12px] outline-none focus:ring-2 focus:ring-teal-400 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-y-auto flex-1 p-2">
+                  {loadingDeptUsers ? (
+                    <p className="text-center text-slate-400 text-[12px] py-6">Loading…</p>
+                  ) : (() => {
+                    const term = deptUsersSearch.toLowerCase();
+                    const filtered = deptUsersForApproval.filter(u =>
+                      u.name?.toLowerCase().includes(term) || u.empId?.toLowerCase().includes(term)
+                    );
+                    return filtered.length === 0
+                      ? <p className="text-center text-slate-400 text-[12px] py-6">No users found</p>
+                      : filtered.map(u => {
+                          const selected = hodSelectedPersons.some(p => p.empId === u.empId);
+                          return (
+                            <button
+                              key={u.empId}
+                              onClick={() => setHodSelectedPersons(prev =>
+                                selected ? prev.filter(p => p.empId !== u.empId) : [...prev, { empId: u.empId, name: u.name }]
+                              )}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all text-left border-2 ${selected ? "bg-teal-50 border-teal-300" : "border-transparent hover:bg-slate-50 hover:border-slate-200"}`}
+                            >
+                              <div className={`w-5 h-5 rounded-full flex-shrink-0 border-2 flex items-center justify-center transition-all ${selected ? "border-teal-500 bg-teal-500" : "border-slate-300"}`}>
+                                {selected && <Check size={10} className="text-white"/>}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[12px] font-bold text-slate-700 truncate">{u.name}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{u.empId}</p>
+                              </div>
+                            </button>
+                          );
+                        });
+                  })()}
+                </div>
+                <div className="px-3 py-3 border-t border-slate-100 flex gap-2">
+                  <button
+                    onClick={() => { setHodApproveMode(null); setHodSelectedPersons([]); setDeptUsersSearch(""); }}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[12px] transition-all active:scale-95"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleHodInternalConfirm}
+                    disabled={approvalLoading || hodSelectedPersons.length === 0}
+                    className="flex-1 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-black text-[12px] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {approvalLoading
+                      ? <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                      : hodSelectedPersons.length > 0
+                      ? `Assign to ${hodSelectedPersons.length} person${hodSelectedPersons.length > 1 ? "s" : ""}`
+                      : "Select people"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Forward — dept list with search */}
             {hodApproveMode === "forward" && (
               <div className="flex flex-col" style={{ maxHeight: "420px" }}>
                 <div className="px-3 py-2.5 border-b border-slate-100">
