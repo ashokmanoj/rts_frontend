@@ -129,7 +129,14 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
   const isGroup  = Array.isArray(log.images) && log.images.length > 1;
   const hasFile  = log.type === "file"  || log.type === "mixed";
   const hasVoice = log.type === "voice" || log.type === "mixed";
-  const hasText  = !!log.text;
+
+  // Parse legacy <!--RQ:reqId~|~author~|~preview-->replyText format
+  const RQ_RE = /^<!--RQ:(\d+)~\|~([^~]*?)~\|~([\s\S]*?)-->([\s\S]*)$/;
+  const rqMatch = log.text ? RQ_RE.exec(log.text) : null;
+  const rqRef   = rqMatch ? { reqId: rqMatch[1], author: rqMatch[2], preview: rqMatch[3].trim() } : null;
+  const displayText = rqMatch ? rqMatch[4] : log.text;
+
+  const hasText  = !!(rqRef || displayText);
 
   const { Icon, color, bg } = hasFile ? getFileIcon(log.fileName || "") : {};
   const isSpreadsheet = hasFile && !log.isImage && isSpreadsheetFile(log.fileName);
@@ -141,7 +148,7 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
 
   // Build a short label for the replied-to message
   const replyPreviewText = log.replyTo?.text
-    ? (() => { const t = stripHtml(log.replyTo.text).replace(/\n+/g, " "); return t.slice(0, 60) + (t.length > 60 ? "…" : ""); })()
+    ? (() => { const raw = log.replyTo.text.replace(/^<!--RQ:[^>]*-->/, ""); const t = stripHtml(raw).replace(/\n+/g, " "); return t.slice(0, 60) + (t.length > 60 ? "…" : ""); })()
     : log.replyTo?.fileName
     ? `📎 ${log.replyTo.fileName}`
     : log.replyTo?.isVoice
@@ -171,7 +178,7 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
           {getInitials(log.author)}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {/* Header: name + timestamp */}
           {(() => {
             const displayName = (log.role === "Requestor" || !log.role)
@@ -211,6 +218,21 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
                     : (log.replyTo.dept || log.replyTo.role)}
                 </p>
                 <p className="text-[10px] text-slate-500 truncate leading-tight">{replyPreviewText}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Legacy cross-request reference block <!--RQ:id~|~author~|~preview--> */}
+          {rqRef && (
+            <div className="flex items-stretch gap-1.5 mb-1.5 max-w-[280px] rounded-lg">
+              <div className="w-0.5 rounded-full bg-violet-400 flex-shrink-0" />
+              <div className="bg-violet-50 border border-violet-100 rounded-lg px-2 py-1 min-w-0">
+                <p className="text-[9px] font-black text-violet-600 truncate">↗ {rqRef.author} · Req #{rqRef.reqId}</p>
+                {rqRef.preview && (
+                  <p className="text-[10px] text-slate-500 truncate leading-tight">
+                    {rqRef.preview.length > 60 ? rqRef.preview.slice(0, 60) + "…" : rqRef.preview}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -294,13 +316,13 @@ export default function MessageBubble({ log, onReply, onScrollToMessage, current
             )}
 
             {/* ── Text / caption ── */}
-            {hasText && (
-              isHtmlContent(log.text)
+            {displayText && (
+              isHtmlContent(displayText)
                 ? <div
                     className="text-slate-600 text-[11px] leading-relaxed break-words [&_ul]:list-disc [&_ul]:list-inside [&_ul]:my-0.5 [&_mark]:bg-yellow-200 [&_mark]:rounded-sm [&_a]:text-blue-500 [&_a]:underline [&_b]:font-bold [&_strong]:font-bold [&_u]:underline"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(log.text) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayText) }}
                   />
-                : <p className="text-slate-600 text-[11px] leading-relaxed break-words whitespace-pre-wrap">{renderRichText(log.text)}</p>
+                : <p className="text-slate-600 text-[11px] leading-relaxed break-words whitespace-pre-wrap">{renderRichText(displayText)}</p>
             )}
           </div>
         </div>

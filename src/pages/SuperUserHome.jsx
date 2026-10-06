@@ -625,6 +625,7 @@ function RequestsTab({ currentUser, onLogout, onSwitchRole }) {
 
       {activeModal === "details" && selectedReq && (
         <DetailsModal
+          key={selectedReq?.id}
           req={selectedReq}
           chatLogs={chatLogs}
           currentUser={currentUser}
@@ -849,6 +850,7 @@ function ManagementTab({ currentUser }) {
 
       {selectedReq && (
         <DetailsModal
+          key={selectedReq?.id}
           req={selectedReq}
           chatLogs={chatLogs}
           currentUser={currentUser}

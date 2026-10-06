@@ -695,6 +695,7 @@ export default function ManagementPortal({ currentUser, onLogout }) {
 
       {selectedReq && (
         <DetailsModal
+          key={selectedReq?.id}
           req={selectedReq}
           chatLogs={chatLogs}
           currentUser={currentUser}

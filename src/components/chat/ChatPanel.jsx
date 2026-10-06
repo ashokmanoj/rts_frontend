@@ -309,7 +309,7 @@ export default function ChatPanel({ reqId, logs, currentUser, onSendMessage, isC
 
       {/* Message list */}
       <div className="relative flex-1 overflow-hidden">
-        <div ref={chatContainerRef} onScroll={handleScroll} className="h-full overflow-y-auto space-y-3 bg-slate-50 md:rounded-2xl p-3 md:border md:border-slate-100">
+        <div ref={chatContainerRef} onScroll={handleScroll} className="h-full overflow-y-auto overflow-x-hidden space-y-3 bg-slate-50 md:rounded-2xl p-3 md:border md:border-slate-100">
           {visibleLogs.length === 0 && (
             <p className="text-center text-slate-400 text-sm mt-10">No activity yet.</p>
           )}

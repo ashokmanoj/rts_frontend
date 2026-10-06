@@ -454,7 +454,7 @@ export default function ChatInputBar({ onSend, replyTo, onCancelReply }) {
                 }
               }}
               className="outline-none text-[12px] text-slate-800 leading-relaxed py-2 [&_ul]:list-disc [&_ul]:list-inside [&_mark]:bg-yellow-200 [&_mark]:rounded-sm"
-              style={{ minHeight: 28, maxHeight: 120, overflowY: "auto" }}
+              style={{ minHeight: 28, maxHeight: 120, overflowY: "auto", overflowX: "hidden", wordBreak: "break-word", overflowWrap: "break-word" }}
             />
           </div>
 

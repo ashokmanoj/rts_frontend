@@ -96,6 +96,7 @@ function ApprovalProgress({ rmStatus, hodStatus, assignedRmStatus, assignedHodSt
 }
 
 export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSendMessage, onApproval, onOpenCloseTicket, onAcknowledge, onRefreshChat, onAddToThread, onOpenRequest }) {
+
   const [selectedDept,            setSelectedDept]            = useState(req?.assignedDept || "");
   const [approvalComment,         setApprovalComment]         = useState("");
   const [lightboxData,            setLightboxData]            = useState(null); // { urls, names, index }
@@ -137,6 +138,11 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
   const [threadMembers,  setThreadMembers]  = useState([]);
   const [threadRootId,   setThreadRootId]   = useState(null);
   const [threadLoading,  setThreadLoading]  = useState(false);
+
+  // Reset to details panel whenever a different request is opened
+  useEffect(() => {
+    setShowChat(false);
+  }, [req?.id]);
 
   useEffect(() => {
     if (!req?.id) return;
@@ -908,19 +914,16 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${roleBadgeCls}`}>{currentUser?.dept} Department</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <button onClick={() => setShowChat(true)} className="md:hidden flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full text-[11px] font-black transition-colors">
-                <MessageSquare size={13}/>
-                Activity
-              </button>
               <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"><X size={20}/></button>
             </div>
           </div>
 
-          {/* Body */}
-          <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
+          {/* Body — side-by-side panels, forced via inline style so CSS class issues cannot affect it */}
+          <div style={{display:'flex', flexDirection:'row', flex:1, overflow:'hidden', minHeight:0}}>
 
-            {/* LEFT PANEL */}
-            <div className={`overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-3 pb-6 md:pb-8 min-h-0 md:flex md:flex-col md:w-[48%] md:flex-none md:border-r md:border-slate-200 ${showChat ? "hidden" : "flex flex-col flex-1 border-b border-slate-200"}`}>
+            {/* LEFT PANEL — always visible */}
+            <div style={{width:'48%', flexShrink:0, display:'flex', flexDirection:'column', overflowY:'auto', overflowX:'hidden', minHeight:0, borderRight:'1px solid #e2e8f0'}}
+                 className="p-4 sm:p-5 space-y-3 pb-6 md:pb-8">
 
               <ApprovalProgress
                 rmStatus={req?.rmStatus}           hodStatus={req?.hodStatus}
@@ -1683,13 +1686,8 @@ export default function DetailsModal({ req, chatLogs, currentUser, onClose, onSe
               )}
             </div>
 
-            {/* RIGHT PANEL — Chat */}
-            <div className={`min-h-0 md:flex md:flex-col md:flex-1 ${showChat ? "flex flex-col flex-1" : "hidden"}`}>
-              <div className="md:hidden flex items-center px-4 py-2.5 border-b border-slate-100 bg-white flex-shrink-0">
-                <button onClick={() => setShowChat(false)} className="flex items-center gap-1.5 text-indigo-600 font-black text-[12px]">
-                  ← Back to Details
-                </button>
-              </div>
+            {/* RIGHT PANEL — Chat; always visible */}
+            <div style={{flex:1, display:'flex', flexDirection:'column', minHeight:0, minWidth:0, overflow:'hidden'}}>
               <ChatPanel reqId={req?.id} logs={logs} currentUser={currentUser} onSendMessage={onSendMessage} isClosed={isClosed} canChat={canChat} onRefreshChat={onRefreshChat} canAttachPostClose={canAttachPostClose} onAttachPostClose={handleAttachPostClose} />
             </div>
           </div>
