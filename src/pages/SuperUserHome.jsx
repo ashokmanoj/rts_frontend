@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { LogOut, Zap, ClipboardList, ShieldCheck, ShieldOff, Users, UtensilsCrossed, BarChart2, RefreshCw, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, Pencil, Trash2, AlertTriangle, UserPlus, KeyRound, Search, X, Plus, MessageSquare, Mail, Building2, Check, Upload, Paperclip, ChevronLeft, MapPin, Smartphone } from "lucide-react";
+import { LogOut, Zap, ClipboardList, ShieldCheck, ShieldOff, Users, UtensilsCrossed, BarChart2, RefreshCw, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, ChevronRight, Pencil, Trash2, AlertTriangle, UserPlus, KeyRound, Search, X, Plus, MessageSquare, Mail, Building2, Check, Upload, Paperclip, ChevronLeft, MapPin, Smartphone } from "lucide-react";
 
 import { fetchRequests, fetchFilterOptions, createRequest, submitApproval, acknowledgeRequest, markRequestSeen, markRequestUnread, closeRequest, editRequest, deleteRequest } from "../services/requestService";
 import { fetchUserRoles, addUserRole, updateUserRole, toggleUserRole, deleteUserRole } from "../services/userRoleService";
@@ -1389,148 +1389,155 @@ function UserRolesTab() {
 // Mobile Users Tab
 // ─────────────────────────────────────────────────────────────────────────────
 function MobileUsersTab() {
-  const [users,     setUsers]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState("");
-  const [todayOnly, setTodayOnly] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [dauDays,     setDauDays]     = useState([]);
+  const [loadingD,    setLoadingD]    = useState(true);
+  const [expandedDay, setExpandedDay] = useState(null);
 
-  const load = useCallback(async () => {
+  const loadDau = useCallback(async () => {
+    setLoadingD(true);
     try {
-      const data = await get("/admin/mobile-users");
-      setUsers(data);
-      setLastUpdated(new Date());
+      const to   = new Date();
+      const from = new Date(to); from.setDate(from.getDate() - 29);
+      const fmt  = d => d.toISOString().slice(0, 10);
+      const data = await get(`/analytics/dau?from=${fmt(from)}&to=${fmt(to)}&detail=true`);
+      setDauDays(data.days || []);
     } catch { /* silent */ }
-    finally { setLoading(false); }
+    finally { setLoadingD(false); }
   }, []);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 30_000);
+    loadDau();
+    const id = setInterval(loadDau, 30_000);
     return () => clearInterval(id);
-  }, [load]);
+  }, [loadDau]);
 
-  const isToday = (d) => {
-    if (!d) return false;
-    const t = new Date(d), n = new Date();
-    return t.getFullYear() === n.getFullYear() && t.getMonth() === n.getMonth() && t.getDate() === n.getDate();
+  const fmtDate = (s) => {
+    if (!s) return "—";
+    const [y, m, d] = s.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  };
+  const fmtTime = (iso) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
-  const todayCount  = users.filter(u => isToday(u.lastSeen)).length;
-  const onlineCount = users.filter(u => u.isOnline).length;
-
-  const filtered = users.filter(u => {
-    if (todayOnly && !isToday(u.lastSeen)) return false;
-    const q = search.toLowerCase();
-    return !q || u.name?.toLowerCase().includes(q) || u.empId?.toLowerCase().includes(q) || u.dept?.toLowerCase().includes(q) || u.location?.toLowerCase().includes(q);
-  });
-
-  const timeAgo = (d) => {
-    if (!d) return "—";
-    const diff = Date.now() - new Date(d).getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 1)  return "just now";
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
-  };
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayDau = dauDays.find(d => d.date === todayStr)?.count ?? 0;
+  const maxDau   = Math.max(...dauDays.map(d => d.count), 1);
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 bg-gradient-to-r from-green-50 to-white border-b border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 bg-gradient-to-r from-violet-50 to-white border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-xl"><Smartphone size={18} className="text-green-600"/></div>
+            <div className="p-2 bg-violet-100 rounded-xl"><BarChart2 size={18} className="text-violet-600"/></div>
             <div>
-              <h2 className="font-black text-slate-800 text-[15px] leading-none">Mobile Users</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Users with app installed</p>
+              <h2 className="font-black text-slate-800 text-[15px] leading-none">App Sessions</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Daily active users · last 30 days</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Stats */}
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1.5 bg-green-100 rounded-xl text-[12px] font-black text-green-700 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block"/>
-                {onlineCount} Online
-              </div>
-              <button onClick={() => setTodayOnly(v => !v)}
-                className={`px-3 py-1.5 rounded-xl text-[12px] font-black flex items-center gap-1.5 transition-colors ${todayOnly ? "bg-blue-600 text-white shadow-sm" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}>
-                <span className="w-2 h-2 rounded-full bg-current opacity-80 inline-block"/>
-                {todayCount} Seen Today
-              </button>
-              <div className="px-3 py-1.5 bg-slate-100 rounded-xl text-[12px] font-black text-slate-600">
-                {users.length} Total
-              </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="px-3 py-1.5 bg-violet-100 rounded-xl text-[12px] font-black text-violet-700 flex items-center gap-1.5">
+              <BarChart2 size={11}/> {todayDau} Active Today
             </div>
-            {/* Search */}
-            <div className="relative">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search name, ID, dept…"
-                className="pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-[12px] bg-slate-50 focus:outline-none focus:border-green-400 w-52"/>
-            </div>
-            <button onClick={load} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all" title="Refresh">
-              <RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
+            <button onClick={loadDau}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all" title="Refresh">
+              <RefreshCw size={14} className={loadingD ? "animate-spin" : ""}/>
             </button>
           </div>
         </div>
 
-        {lastUpdated && (
-          <div className="px-5 py-2 bg-slate-50 border-b border-slate-100 text-[10px] text-slate-400 font-bold">
-            Last updated: {lastUpdated.toLocaleTimeString()} · Auto-refreshes every 30s
-          </div>
-        )}
+        <div className="p-5">
+            {loadingD ? (
+              <p className="text-center py-14 text-slate-400 font-bold">Loading session data…</p>
+            ) : dauDays.length === 0 ? (
+              <p className="text-center py-14 text-slate-400 font-bold">No app sessions recorded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {/* Mini bar chart */}
+                <div className="mb-5">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Last 30 days — Daily Active Users</p>
+                  <div className="flex items-end gap-1 h-20">
+                    {[...dauDays].reverse().map(d => {
+                      const pct = Math.max(6, Math.round((d.count / maxDau) * 100));
+                      const isT = d.date === todayStr;
+                      return (
+                        <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5 group cursor-pointer"
+                          onClick={() => setExpandedDay(expandedDay === d.date ? null : d.date)}>
+                          <span className="text-[8px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity font-bold">{d.count}</span>
+                          <div
+                            className={`w-full rounded-t-sm transition-all ${isT ? "bg-violet-500" : "bg-indigo-300 group-hover:bg-indigo-500"}`}
+                            style={{ height: `${pct}%` }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between text-[9px] text-slate-400 font-bold mt-1">
+                    <span>{fmtDate([...dauDays].reverse()[0]?.date)}</span>
+                    <span>Today</span>
+                  </div>
+                </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">#</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Status</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Name</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Emp ID</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Department</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Location</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Role</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">Last Seen</th>
-                <th className="px-4 py-3 text-left font-black text-slate-400 uppercase tracking-wider text-[10px]">App Installed</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr><td colSpan={9} className="text-center py-14 text-slate-400 font-bold">Loading…</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-14 text-slate-400 font-bold">No mobile users found.</td></tr>
-              ) : filtered.map((u, i) => (
-                <tr key={u.empId} className={`hover:bg-slate-50 transition-colors ${!u.isActive ? "opacity-50" : ""}`}>
-                  <td className="px-4 py-3 text-slate-400 font-bold">{i + 1}</td>
-                  <td className="px-4 py-3">
-                    {u.isOnline ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>Active Now
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"/>Offline
-                      </span>
+                {/* Day rows */}
+                {dauDays.map(day => (
+                  <div key={day.date} className="border border-slate-200 rounded-xl overflow-hidden">
+                    {/* Row header */}
+                    <button
+                      className="w-full flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                      onClick={() => setExpandedDay(expandedDay === day.date ? null : day.date)}
+                    >
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${day.date === todayStr ? "bg-violet-500" : "bg-indigo-400"}`}/>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-slate-800 text-[13px]">{fmtDate(day.date)}{day.date === todayStr && <span className="ml-2 text-[10px] bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full font-black">Today</span>}</p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-xl text-[12px] font-black">
+                          {day.count} user{day.count !== 1 ? "s" : ""} active
+                        </div>
+                        {/* Bar */}
+                        <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-indigo-400 rounded-full transition-all" style={{ width: `${Math.round((day.count / maxDau) * 100)}%` }}/>
+                        </div>
+                        <ChevronRight size={14} className={`text-slate-400 transition-transform ${expandedDay === day.date ? "rotate-90" : ""}`}/>
+                      </div>
+                    </button>
+
+                    {/* Expanded user list */}
+                    {expandedDay === day.date && (
+                      <div className="border-t border-slate-100">
+                        <table className="w-full text-[12px]">
+                          <thead>
+                            <tr className="bg-slate-50">
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">#</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Name</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Emp ID</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Department</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Last Ping</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Platform</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {(day.users || []).map((u, i) => (
+                              <tr key={u.empId} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-4 py-2.5 text-slate-400 font-bold">{i + 1}</td>
+                                <td className="px-4 py-2.5 font-black text-slate-800">{u.name}</td>
+                                <td className="px-4 py-2.5 font-mono font-bold text-indigo-600">{u.empId}</td>
+                                <td className="px-4 py-2.5 text-slate-600 font-medium">{u.dept || "—"}</td>
+                                <td className="px-4 py-2.5 text-slate-500 font-medium">{fmtTime(u.lastPing)}</td>
+                                <td className="px-4 py-2.5">
+                                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-black capitalize">{u.platform || "mobile"}</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
-                  </td>
-                  <td className="px-4 py-3 font-black text-slate-800">{u.name}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-indigo-600">{u.empId}</td>
-                  <td className="px-4 py-3 text-slate-600 font-medium">{u.dept}</td>
-                  <td className="px-4 py-3 text-slate-500 font-medium">{u.location || "—"}</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-black">{u.role}</span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500 font-medium">{timeAgo(u.lastSeen)}</td>
-                  <td className="px-4 py-3 text-slate-400 font-medium">{timeAgo(u.appInstalledAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                ))}
+              </div>
+            )}
         </div>
       </div>
     </div>
