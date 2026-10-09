@@ -16,8 +16,9 @@ import FoodPage            from "./FoodPage";
 import UserManagementPage  from "./UserManagementPage";
 import RoleManagementPage  from "./RoleManagementPage";
 import { UtensilsCrossed, ClipboardList, LogOut, Users, CheckCircle2, XCircle, RefreshCw, ChevronDown, Megaphone, ShieldCheck, Headphones, Radio } from "lucide-react";
-import DashboardSkeleton from "../components/ui/DashboardSkeleton";
-import TableSkeleton     from "../components/ui/TableSkeleton";
+import DashboardSkeleton  from "../components/ui/DashboardSkeleton";
+import TableSkeleton      from "../components/ui/TableSkeleton";
+import AppInstallBanner   from "../components/ui/AppInstallBanner";
 
 // ── Filter persistence helpers ────────────────────────────────────────────────
 const FILTER_KEY = (empId) => `rts_filters_${empId}`;
@@ -372,6 +373,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
 
   return (
     <div className="h-dvh bg-[#f8fafc] font-sans text-[12px] flex flex-col overflow-hidden">
+      <AppInstallBanner currentUser={currentUser} />
 
       {/* ── Header: intern bar or FilterBar (shrinks to content) ────────────── */}
       <div className="flex-shrink-0 px-3 sm:px-6 pt-3 sm:pt-5">
