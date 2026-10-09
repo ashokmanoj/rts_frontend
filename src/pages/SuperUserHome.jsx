@@ -1515,6 +1515,8 @@ function MobileUsersTab() {
                               <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Department</th>
                               <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Last Ping</th>
                               <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Platform</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Version</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider">Build</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -1528,6 +1530,8 @@ function MobileUsersTab() {
                                 <td className="px-4 py-2.5">
                                   <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-black capitalize">{u.platform || "mobile"}</span>
                                 </td>
+                                <td className="px-4 py-2.5 font-mono font-bold text-slate-700">{u.versionName || "—"}</td>
+                                <td className="px-4 py-2.5 text-slate-400 font-medium">{u.appVersion ?? "—"}</td>
                               </tr>
                             ))}
                           </tbody>
