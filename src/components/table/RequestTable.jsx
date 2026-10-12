@@ -64,15 +64,8 @@ export default function RequestTable({ requests, sortMode, currentUser, onOpenDe
     setContextMenu(null);
   };
 
-  // 1) Reopened + unread → very top  2) Normal unread  3) Reopened + read  4) Normal read
-  const sorted = (!sortMode || sortMode === "default")
-    ? [
-        ...requests.filter(r => r.reopenedAt && !r.isClosed && !r.seen),
-        ...requests.filter(r => !r.seen && !(r.reopenedAt && !r.isClosed)),
-        ...requests.filter(r => r.reopenedAt && !r.isClosed &&  r.seen),
-        ...requests.filter(r =>  r.seen && !(r.reopenedAt && !r.isClosed)),
-      ]
-    : requests;
+  // Default: preserve server order (newest first). Unread dots are visual only.
+  const sorted = requests;
 
   // First 5 columns are frozen (sticky-left). Widths must be fixed so left offsets stay accurate.
   const FROZEN = [
