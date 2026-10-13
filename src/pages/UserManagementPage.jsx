@@ -44,7 +44,7 @@ const DESIGNATIONS = [
   "Asst Executive - Management", "Asst. Manager Operations", "Asst.HR Manager",
   "Business Development Executive", "CEO", "Chief Operating Officer", "Content Writer",
   "Coordinator", "Data Analyst", "Data Coordinator", "Data Engineer", "Data Entry Operator",
-  "Digital Artist", "Digital Marketing Executive", "Director", "Documentation", "DTP",
+  "Deputy General Manager", "Digital Artist", "Digital Marketing Executive", "Director", "Documentation", "DTP",
   "Educator", "Engineer", "Executive", "Executive Vice President", "EXECUTIVE-HR",
   "Facilitator-analyst and notes", "Finance Associate", "Finance Manager", "Flutter Developer",
   "Full Stack Developer", "FX Artist", "Game Designer", "Game Developer",
