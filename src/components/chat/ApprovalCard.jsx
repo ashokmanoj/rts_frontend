@@ -1,5 +1,6 @@
 import { CheckCircle, XCircle, Clock, Forward, Users } from "lucide-react";
 import { sanitizeHtml, isHtmlContent } from "../../utils/sanitize";
+import { renderRichText } from "../../utils/richText";
 // import { getRoleBadgeClass } from "../../utils/roleStyles";
 
 const STATUS_ICON = {
@@ -35,7 +36,7 @@ const BADGE_CLS = {
 export default function ApprovalCard({ log }) {
   return (
     <div
-      className={`rounded-xl p-2.5 border text-[11px] ${CARD_BG[log.status] || "bg-slate-50 border-slate-200"}`}
+      className={`rounded-xl p-2.5 border text-[11px] min-w-0 ${CARD_BG[log.status] || "bg-slate-50 border-slate-200"}`}
     >
       {/* Row 1: icon + name + role  |  date · time */}
       <div className="flex items-center justify-between mb-1">
@@ -83,12 +84,13 @@ export default function ApprovalCard({ log }) {
         </p>
       )}
 
+      {/* overflow-wrap:anywhere so long URLs (query strings have no break points) wrap instead of being clipped */}
       {isHtmlContent(log.text)
         ? <div
-            className="text-slate-600 pl-4 [&_ul]:list-disc [&_ul]:list-inside [&_mark]:bg-yellow-200 [&_b]:font-bold [&_u]:underline"
+            className="text-slate-600 pl-4 [overflow-wrap:anywhere] [&_ul]:list-disc [&_ul]:list-inside [&_mark]:bg-yellow-200 [&_b]:font-bold [&_u]:underline [&_a]:text-blue-500 [&_a]:underline [&_a]:break-all"
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(log.text) }}
           />
-        : <p className="text-slate-600 pl-4">{log.text}</p>}
+        : <p className="text-slate-600 pl-4 [overflow-wrap:anywhere]">{renderRichText(log.text)}</p>}
     </div>
   );
 }
