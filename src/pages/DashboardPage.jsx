@@ -38,6 +38,12 @@ function saveFiltersToStorage(empId, filters) {
   try { localStorage.setItem(FILTER_KEY(empId), JSON.stringify(filters)); } catch {}
 }
 
+// "Unread" sort used to be sent as an unread-only filter; it is now sortOrder=unread
+// (unread first, then the rest). Upgrade filters saved in storage / old URLs.
+function normalizeSort(f) {
+  return f.sortMode === "unread" ? { ...f, sortOrder: "unread", unread: false } : f;
+}
+
 function clearFiltersFromStorage(empId) {
   try { localStorage.removeItem(FILTER_KEY(empId)); } catch {}
 }
@@ -63,9 +69,9 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
     const hasUrlFilters = urlKeys.some(k => searchParams.has(k));
     if (!hasUrlFilters) {
       const stored = loadFiltersFromStorage(currentUserProp?.empId);
-      if (stored) return stored;
+      if (stored) return normalizeSort(stored);
     }
-    return {
+    return normalizeSort({
       name:           parseArr("name"),
       dept:           parseArr("dept"),
       assignedDept:   parseArr("assignedDept"),
@@ -81,7 +87,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
       endDate:        searchParams.get("endDate") ? new Date(searchParams.get("endDate")) : null,
       search:         searchParams.get("search") || "",
       status:         searchParams.get("status") || undefined,
-    };
+    });
   });
 
   const [selectedReq,      setSelectedReq]      = useState(null);
@@ -106,7 +112,7 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   const pollTimerRef = useRef(null);
   const chatPollTimerRef = useRef(null);
   const selectedReqRef = useRef(null);
-  const isFetchingRef = useRef(false);
+  const requestSeqRef = useRef(0);
   const debounceTimerRef = useRef(null);
   const prevRoleKeyRef = useRef(null);
   const sortDropdownRef = useRef(null);
@@ -138,10 +144,11 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
   }, []);
 
   const loadRequests = useCallback(async (page = 1, currentFilters = {}, silent = false) => {
-    if (isFetchingRef.current && !silent) return;
+    // Every call fetches; only the newest call's response is applied, so a quick
+    // filter/sort change is never dropped and a slow older response never overwrites it.
+    const seq = ++requestSeqRef.current;
     if (!silent) setIsFiltering(true);
-    isFetchingRef.current = true;
-    
+
     try {
       // Map frontend keys to backend query params
       const params = {
@@ -151,7 +158,8 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
       };
 
       const result = await fetchRequests(params);
-      
+      if (seq !== requestSeqRef.current) return; // superseded by a newer load
+
       if (result && result.data) {
         setRequests(result.data);
         setPagination(result.pagination);
@@ -165,11 +173,12 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
       }
       setCurrentPage(page);
     } catch (err) {
-      if (!silent) setFetchError("Failed to load requests.");
+      if (!silent && seq === requestSeqRef.current) setFetchError("Failed to load requests.");
     } finally {
-      setIsFiltering(false);
-      setLoadingReqs(false);
-      isFetchingRef.current = false;
+      if (seq === requestSeqRef.current) {
+        setIsFiltering(false);
+        setLoadingReqs(false);
+      }
     }
   }, []);
 
@@ -492,11 +501,11 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
             let nf;
             if      (mode === "asc")    nf = { ...filters, sortMode: "asc",     sortOrder: "asc",  unread: false, latest: false };
             else if (mode === "desc")   nf = { ...filters, sortMode: "desc",    sortOrder: "desc", unread: false, latest: false };
-            else if (mode === "unread") nf = { ...filters, sortMode: "unread",  sortOrder: "desc", unread: true,  latest: false };
+            else if (mode === "unread") nf = { ...filters, sortMode: "unread",  sortOrder: "unread", unread: false, latest: false };
             else                        nf = { ...filters, sortMode: "default", sortOrder: "default", unread: false, latest: false };
+            // The filters effect does the fetch; a new sort always starts from page 1
+            setCurrentPage(1);
             setFilters(nf);
-            isFetchingRef.current = false;
-            loadRequests(currentPage, nf);
             setSortDropdownOpen(false);
           };
 
@@ -648,7 +657,13 @@ export default function DashboardPage({ currentUser: currentUserProp, onLogout, 
               <DetailsModal
                 key={`${selectedReq.id}-${detailsKey}`}
                 req={selectedReq} chatLogs={chatLogs} currentUser={currentUser}
-                onClose={() => { setActiveModal(null); setSelectedReq(null); }}
+                onClose={() => {
+                  // Everything in the chat was seen while the modal was open — clear the row's badge
+                  const closedId = selectedReq?.id;
+                  setRequests((prev) => prev.map((r) => (r.id === closedId ? { ...r, unreadChatCount: 0 } : r)));
+                  setActiveModal(null);
+                  setSelectedReq(null);
+                }}
                 onSendMessage={handleSendMessage} onApproval={handleApproval}
                 onAcknowledge={handleAcknowledge}
                 onOpenCloseTicket={(req) => { setCloseTicketReq(req); setActiveModal(null); setSelectedReq(null); }}

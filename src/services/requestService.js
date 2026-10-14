@@ -22,7 +22,9 @@ export async function fetchRequests(params = {}) {
     if (Array.isArray(val)) {
       if (val.length > 0) query.set(key, val.join(","));
     } else if (val instanceof Date) {
-      query.set(key, val.toISOString().split("T")[0]);
+      // Local calendar date — toISOString() is UTC and shifts IST dates back one day
+      const pad = (n) => String(n).padStart(2, "0");
+      query.set(key, `${val.getFullYear()}-${pad(val.getMonth() + 1)}-${pad(val.getDate())}`);
     } else if (val === true) {
       query.set(key, "true");
     } else if (val !== "" && val !== false) {

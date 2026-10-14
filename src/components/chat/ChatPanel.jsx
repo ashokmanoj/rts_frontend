@@ -67,15 +67,18 @@ export default function ChatPanel({ reqId, logs, currentUser, onSendMessage, isC
 
   const visibleLogs = logs.filter(l => !(l.type === "system" && l.text?.includes("Request edited by")));
 
-  // Mark chat as read when panel opens and refresh ticks every 8 s
+  // Mark chat as read when panel opens, on every 8 s refresh while it stays open, and on close —
+  // otherwise messages that arrive while the panel is open come back as an unread badge in the list.
   useEffect(() => {
     if (!reqId) return;
     isFirstLoad.current = true;
-    post(`/requests/${reqId}/chat/read`, {}).catch(() => {});
+    const markRead = () => post(`/requests/${reqId}/chat/read`, {}).catch(() => {});
+    markRead();
     const interval = setInterval(() => {
       onRefreshChat?.(reqId);
+      markRead();
     }, 8000);
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); markRead(); };
   }, [reqId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Smart scroll: instant jump on first open; only auto-scroll on new messages when near bottom
